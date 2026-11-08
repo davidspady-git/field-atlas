@@ -569,7 +569,95 @@
   .missed-list .miss-tally { color: var(--bad); font-family: "IBM Plex Mono", monospace; font-size: 12.5px; }
   .no-misses { color: var(--good); font-size: 14px; margin: 0 0 20px; }
 
+  /* ---------- Pinpoint mode: one plain landmass, no borders ---------- */
+
+  #app[data-mode="pinpoint"] .country { pointer-events: none; }
+  #app[data-mode="pinpoint"] .country.kind-country:not(.flash-target),
+  #app[data-mode="pinpoint"] .country.kind-context {
+    fill: var(--land);
+    stroke: var(--land);
+  }
+  #app[data-mode="pinpoint"] #labelsToggle { display: none; }
+  #app[data-mode="pinpoint"] #mapSvg { cursor: crosshair; }
+
+  .pin-line { fill: none; stroke: var(--bad); stroke-width: 2; stroke-dasharray: 5 4; }
+  .pin-guess { fill: var(--ink); stroke: var(--panel); stroke-width: 1.5; }
+  .pin-guess.inside { fill: var(--good); }
+  .pin-near { fill: var(--accent-strong); stroke: var(--panel); stroke-width: 1; }
+
+  /* ---------- Neighbors mode: no map, a list to pick from ---------- */
+
+  #app.in-round[data-mode="neighbors"] #mapWrap,
+  #app.in-round[data-mode="neighbors"] #zoomControls { display: none; }
+
+  #nbrPanel {
+    position: absolute;
+    inset: 0;
+    overflow-y: auto;
+    padding: 140px 16px 32px;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    z-index: 4;
+  }
+  #nbrPanel[hidden] { display: none; }
+  .nbr-card {
+    background: var(--panel);
+    border: 1px solid var(--panel-border);
+    border-radius: 18px;
+    box-shadow: var(--shadow);
+    padding: 20px 22px;
+    width: 100%;
+    max-width: 760px;
+  }
+  .nbr-help { color: var(--ink-soft); font-size: 14px; margin: 0 0 14px; line-height: 1.45; }
+  .nbr-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+  .nbr-chip {
+    border: 1.5px solid var(--panel-border);
+    background: transparent;
+    color: var(--ink);
+    border-radius: 12px;
+    padding: 10px 12px;
+    font-size: 14px;
+    font-weight: 600;
+    text-align: left;
+    min-height: 44px;
+  }
+  .nbr-chip:hover:not(:disabled) { border-color: var(--ink-soft); }
+  .nbr-chip.picked { background: var(--accent); color: var(--accent-ink); border-color: var(--accent-strong); }
+  .nbr-chip:disabled { cursor: default; }
+  .nbr-chip.hit { background: var(--good); color: var(--good-ink); border-color: var(--good); }
+  .nbr-chip.wrong { background: var(--bad); color: var(--bad-ink); border-color: var(--bad); }
+  .nbr-chip.missed { border: 2px dashed var(--good); }
+  .nbr-chip.checked:not(.hit):not(.wrong):not(.missed) { opacity: 0.4; }
+  .nbr-chip .nbr-tag { display: block; font-size: 11px; font-weight: 500; opacity: 0.85; margin-top: 2px; }
+  .nbr-actions { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  #nbrResult { font-size: 15px; margin: 0; }
+  #nbrResult b { font-family: "IBM Plex Mono", monospace; }
+  #nbrBtn {
+    background: var(--accent);
+    color: var(--accent-ink);
+    border: none;
+    border-radius: 12px;
+    padding: 12px 28px;
+    font-size: 15px;
+    font-weight: 700;
+    margin-left: auto;
+  }
+  #nbrBtn:hover { background: var(--accent-strong); }
+
+  #scoreSub { text-align: center; color: var(--ink-soft); font-size: 14px; margin: -8px 0 18px; }
+  #scoreSub[hidden] { display: none; }
+  .missed-list .miss-detail { text-align: right; }
+
   @media (max-width: 560px) {
+    #nbrPanel { padding-top: 215px; }
+    .nbr-grid { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); }
     #topbar { flex-direction: column; }
     #promptCard { max-width: 100%; }
     #hudCard { align-self: flex-start; }
@@ -592,7 +680,7 @@
 
   <div id="topbar" hidden>
     <div id="promptCard">
-      <p id="promptEyebrow" class="mono">FIND <span id="promptIndex">1</span> / <span id="promptTotal">50</span><span id="promptKind"></span></p>
+      <p id="promptEyebrow" class="mono"><span id="promptVerb">FIND</span> <span id="promptIndex">1</span> / <span id="promptTotal">50</span><span id="promptKind"></span></p>
       <p id="promptName" class="display">—</p>
     </div>
     <div id="hudCard">
@@ -608,12 +696,23 @@
     </div>
   </div>
 
+  <div id="nbrPanel" hidden>
+    <div class="nbr-card">
+      <p class="nbr-help" id="nbrHelp"></p>
+      <div class="nbr-grid" id="nbrGrid"></div>
+      <div class="nbr-actions">
+        <p id="nbrResult"></p>
+        <button id="nbrBtn" type="button">Check</button>
+      </div>
+    </div>
+  </div>
+
   <div id="toast"><span class="toast-title"></span><span class="toast-detail"></span></div>
 
   <div class="overlay" id="startOverlay">
     <div class="card">
       <h1>Field Atlas</h1>
-      <p class="tagline">A spinning-globe naming drill — countries, mountain ranges, and lakes. Drag to rotate, scroll or pinch to zoom, then double-click (double-tap on a phone) what you're asked for. Miss one and it comes back around more often.</p>
+      <p class="tagline">A spinning-globe naming drill — countries, mountain ranges, and lakes. Drag to rotate, scroll or pinch to zoom, then double-click (double-tap on a phone) what you're asked for. Miss one and it comes back around more often. <b>Pinpoint</b>: no borders, drop a pin where the country is, scored by miles off. <b>Neighbors</b>: no map, pick every country that borders it.</p>
 
       <div id="historyPanel" hidden>
         <p class="field-label">Your record</p>
@@ -655,7 +754,7 @@
 
       <div class="howto">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6"/><path d="M12 8v5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><circle cx="12" cy="16" r="0.9" fill="currentColor"/></svg>
-        <span>Once a pool drops below everything in a mode, it's rebuilt each round from whichever items currently give you the most trouble. Countries too small to click precisely (Vatican City, Kiribati, Nauru…) get a faint marker that lights up as your cursor gets close; in Lakes mode, every lake gets that marker, since some are tiny. A miss auto-rotates the globe to reveal where the answer actually was.</span>
+        <span>Once a pool drops below everything in a mode, it's rebuilt each round from whichever items currently give you the most trouble. Countries too small to click precisely (Vatican City, Kiribati, Nauru…) get a faint marker that lights up as your cursor gets close; in Lakes mode, every lake gets that marker, since some are tiny. A miss auto-rotates the globe to reveal where the answer actually was. Pinpoint scores 100 for a pin on or inside the country, one point less per 10 miles off. Neighbors scores the borders you got as a share of the real ones plus any wrong picks.</span>
       </div>
       <button class="resetLink" id="resetStatsBtn">Reset my saved progress</button>
     </div>
@@ -667,6 +766,7 @@
       <div class="score-ring-wrap">
         <p id="scoreBig" class="mono"><span id="scoreFrac"></span></p>
       </div>
+      <p id="scoreSub" hidden></p>
       <p class="field-label" id="missedLabel">Missed this round</p>
       <ul class="missed-list" id="missedList"></ul>
       <p class="no-misses" id="noMisses" hidden>Clean round — every country landed.</p>
@@ -984,6 +1084,8 @@ window.__FIELD_ATLAS_PHYSICAL__={"mountains": [{"id": "mtn:Great Dividing Range"
   const graticuleLayer = svg.append("path").attr("class", "graticule").datum(d3.geoGraticule10());
   const g = svg.append("g").attr("id", "countryLayer");
   const haloLayer = svg.append("g").attr("id", "haloLayer");
+  const pinLayer = svg.append("g").attr("id", "pinLayer");
+  const pinPath = d3.geoPath(projection);
   const labelLayer = svg.append("g").attr("id", "labelLayer");
 
   projection.fitSize([WIDTH, HEIGHT], { type: "Sphere" });
@@ -1013,6 +1115,7 @@ window.__FIELD_ATLAS_PHYSICAL__={"mountains": [{"id": "mtn:Great Dividing Range"
     g.selectAll("path.country").attr("d", (d) => path(d.geometry));
     updateHalos();
     updateLabels();
+    pinLayer.selectAll("path").attr("d", (d) => pinPath.pointRadius(d.r || 4)(d.geo));
   }
 
   function updateLabels() {
@@ -1331,6 +1434,8 @@ window.__FIELD_ATLAS_PHYSICAL__={"mountains": [{"id": "mtn:Great Dividing Range"
   let mapReady = false;
 
   function displayNameFor(key) {
+    if (key.startsWith("pin:")) return displayNameFor(key.slice(4)) + " (pin)";
+    if (key.startsWith("nbr:")) return displayNameFor(key.slice(4)) + " (neighbors)";
     if (COUNTRY_DISPLAY[key]) return COUNTRY_DISPLAY[key];
     if (CONTEXT_DISPLAY[key]) return CONTEXT_DISPLAY[key];
     const p = PHYSICAL_FEATURES.find((f) => f.id === key);
@@ -1405,6 +1510,7 @@ window.__FIELD_ATLAS_PHYSICAL__={"mountains": [{"id": "mtn:Great Dividing Range"
         .filter((f) => f.geometry.geometry);
 
       if (!FEATURES.length) throw new Error("No country geometry decoded");
+      buildNeighbors(geoms);
 
       classifyMicroStates();
 
@@ -1467,16 +1573,160 @@ window.__FIELD_ATLAS_PHYSICAL__={"mountains": [{"id": "mtn:Great Dividing Range"
     }
   }
 
+  // ---------- land borders (Neighbors mode) ----------
+  //
+  // Two countries border each other when they share an arc in the topology
+  // (a shared border is stored once and used by both shapes). Pieces folded
+  // into a parent above (W. Sahara -> Morocco...) count as the parent.
+  // Two real borders too short for this map's resolution are added by hand.
+  const EXTRA_BORDERS = [["Botswana", "Zambia"], ["Morocco", "Spain"]];
+  const NEIGHBORS = new Map();
+
+  function buildNeighbors(geoms) {
+    const owners = new Map();
+    geoms.forEach((g2) => {
+      const name = MERGE_INTO[g2.properties.name] || g2.properties.name;
+      if (!COUNTRY_DISPLAY[name]) return;
+      const polys = g2.type === "Polygon" ? [g2.arcs] : g2.type === "MultiPolygon" ? g2.arcs : [];
+      polys.forEach((poly) => poly.forEach((ring) => ring.forEach((a) => {
+        const i = a < 0 ? ~a : a;
+        if (!owners.has(i)) owners.set(i, new Set());
+        owners.get(i).add(name);
+      })));
+    });
+    const link = (a, b) => {
+      if (a === b) return;
+      if (!NEIGHBORS.has(a)) NEIGHBORS.set(a, new Set());
+      if (!NEIGHBORS.has(b)) NEIGHBORS.set(b, new Set());
+      NEIGHBORS.get(a).add(b);
+      NEIGHBORS.get(b).add(a);
+    };
+    owners.forEach((set) => {
+      const a = [...set];
+      for (let i = 0; i < a.length; i++) for (let j = i + 1; j < a.length; j++) link(a[i], a[j]);
+    });
+    EXTRA_BORDERS.forEach(([a, b]) => link(a, b));
+  }
+
+  // ---------- geometry on the sphere (Pinpoint + nearest countries) ----------
+
+  const RAD = Math.PI / 180;
+  function toVec(lon, lat) {
+    const l = lon * RAD, p = lat * RAD, cp = Math.cos(p);
+    return [cp * Math.cos(l), cp * Math.sin(l), Math.sin(p)];
+  }
+  function toLonLat(v) {
+    return [Math.atan2(v[1], v[0]) / RAD, Math.asin(Math.max(-1, Math.min(1, v[2]))) / RAD];
+  }
+  const dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+  const cross = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+  const angleBetween = (a, b) => Math.acos(Math.max(-1, Math.min(1, dot(a, b))));
+
+  // Every ring of a country as unit vectors, worked out once and kept.
+  function boundaryRings(f) {
+    if (!f._rings) {
+      f._rings = [];
+      toPolygonList(f.geometry.geometry).forEach((poly) => poly.forEach((ring) => {
+        f._rings.push(ring.map(([lon, lat]) => toVec(lon, lat)));
+      }));
+    }
+    return f._rings;
+  }
+
+  // Shortest great-circle distance from a point to a country's border (its
+  // coastline included), and the nearest border point itself.
+  function nearestBoundaryPoint(f, lonlat) {
+    const P = toVec(lonlat[0], lonlat[1]);
+    let best = Infinity, bestVec = null;
+    boundaryRings(f).forEach((ring) => {
+      for (let i = 0; i + 1 < ring.length; i++) {
+        const A = ring[i], B = ring[i + 1];
+        let n = cross(A, B);
+        const nl = Math.hypot(n[0], n[1], n[2]);
+        let ang, C;
+        if (nl > 1e-12) {
+          n = [n[0] / nl, n[1] / nl, n[2] / nl];
+          const d = dot(P, n);
+          let c = [P[0] - d * n[0], P[1] - d * n[1], P[2] - d * n[2]];
+          const cl = Math.hypot(c[0], c[1], c[2]);
+          if (cl > 1e-12) {
+            c = [c[0] / cl, c[1] / cl, c[2] / cl];
+            if (dot(cross(A, c), n) >= 0 && dot(cross(c, B), n) >= 0) {
+              ang = Math.asin(Math.min(1, Math.abs(d)));
+              C = c;
+            }
+          }
+        }
+        if (C === undefined) {
+          const da = angleBetween(P, A), db = angleBetween(P, B);
+          if (da <= db) { ang = da; C = A; } else { ang = db; C = B; }
+        }
+        if (ang < best) { best = ang; bestVec = C; }
+      }
+    });
+    return { miles: best * EARTH_RADIUS_MILES, point: bestVec ? toLonLat(bestVec) : lonlat };
+  }
+
+  // A thinned set of border points per country, for "which countries are
+  // nearest to X" — close enough to rank, cheap enough to do per question.
+  const SAMPLE_POINTS = 220;
+  function borderSample(f) {
+    if (!f._sample) {
+      const all = [];
+      boundaryRings(f).forEach((ring) => ring.forEach((v) => all.push(v)));
+      const step = Math.max(1, Math.ceil(all.length / SAMPLE_POINTS));
+      f._sample = all.filter((_, i) => i % step === 0);
+    }
+    return f._sample;
+  }
+  function countryGap(a, b) {
+    const sa = borderSample(a), sb = borderSample(b);
+    let bestDot = -2;
+    for (let i = 0; i < sa.length; i++) {
+      const u = sa[i];
+      for (let j = 0; j < sb.length; j++) {
+        const d = u[0] * sb[j][0] + u[1] * sb[j][1] + u[2] * sb[j][2];
+        if (d > bestDot) bestDot = d;
+      }
+    }
+    return Math.acos(Math.max(-1, Math.min(1, bestDot)));
+  }
+
+  const NEIGHBOR_LIST_SIZE = 20;
+  function neighborChoices(q) {
+    const truth = NEIGHBORS.get(q.id) || new Set();
+    const others = FEATURES
+      .filter((f) => f.id !== q.id && !truth.has(f.id))
+      .map((f) => ({ f, gap: countryGap(q, f) }))
+      .sort((a, b) => a.gap - b.gap);
+    const ids = [...truth];
+    for (let i = 0; ids.length < NEIGHBOR_LIST_SIZE && i < others.length; i++) ids.push(others[i].f.id);
+    return ids.sort((a, b) => displayNameFor(a).localeCompare(displayNameFor(b)));
+  }
+
   // ---------- mode + region selection UI ----------
 
-  let currentMode = "countries"; // "countries" | "mountains" | "lakes"
-  const MODE_LABELS = { countries: "Countries", mountains: "Mountain Ranges", lakes: "Lakes" };
-  const MODE_POOL_LABELS = { countries: "Countries this round", mountains: "Mountain ranges this round", lakes: "Lakes this round" };
+  let currentMode = "countries"; // "countries" | "mountains" | "lakes" | "pinpoint" | "neighbors"
+  const MODES = ["countries", "mountains", "lakes", "pinpoint", "neighbors"];
+  const MODE_LABELS = { countries: "Countries", mountains: "Mountain Ranges", lakes: "Lakes", pinpoint: "Pinpoint", neighbors: "Neighbors" };
+  const MODE_POOL_LABELS = {
+    countries: "Countries this round", mountains: "Mountain ranges this round", lakes: "Lakes this round",
+    pinpoint: "Countries this round", neighbors: "Countries this round",
+  };
+  const SCORED_MODES = new Set(["pinpoint", "neighbors"]); // points out of 100 per question, not right/wrong
+
+  // Stats keys: plain country names stay Countries mode's (as before); the
+  // new modes keep their own record so a country can be easy to click but
+  // hard to pin, or to list the neighbors of.
+  const STAT_PREFIX = { pinpoint: "pin:", neighbors: "nbr:" };
+  function statKey(id) { return (STAT_PREFIX[currentMode] || "") + id; }
 
   function getActivePool() {
     if (currentMode === "countries") return FEATURES.filter((f) => selectedRegions.has(regionOf(f.id)));
     if (currentMode === "mountains") return PHYSICAL_FEATURES.filter((f) => f.kind === "mountain");
     if (currentMode === "lakes") return PHYSICAL_FEATURES.filter((f) => f.kind === "lake");
+    if (currentMode === "pinpoint") return FEATURES.filter((f) => selectedRegions.has(regionOf(f.id)));
+    if (currentMode === "neighbors") return FEATURES.filter((f) => NEIGHBORS.has(f.id));
     return [];
   }
 
@@ -1505,8 +1755,10 @@ window.__FIELD_ATLAS_PHYSICAL__={"mountains": [{"id": "mtn:Great Dividing Range"
       countries: FEATURES.length,
       mountains: PHYSICAL_FEATURES.filter((f) => f.kind === "mountain").length,
       lakes: PHYSICAL_FEATURES.filter((f) => f.kind === "lake").length,
+      pinpoint: FEATURES.length,
+      neighbors: FEATURES.filter((f) => NEIGHBORS.has(f.id)).length,
     };
-    ["countries", "mountains", "lakes"].forEach((mode) => {
+    MODES.forEach((mode) => {
       const chip = document.createElement("button");
       chip.className = "chip" + (mode === currentMode ? " active" : "");
       chip.type = "button";
@@ -1523,7 +1775,7 @@ window.__FIELD_ATLAS_PHYSICAL__={"mountains": [{"id": "mtn:Great Dividing Range"
   }
 
   function onModeChanged() {
-    document.getElementById("regionSection").hidden = currentMode !== "countries";
+    document.getElementById("regionSection").hidden = currentMode !== "countries" && currentMode !== "pinpoint";
     document.getElementById("poolLabel").textContent = MODE_POOL_LABELS[currentMode];
     document.getElementById("app").dataset.mode = currentMode;
     buildPoolChips();
@@ -1683,8 +1935,10 @@ window.__FIELD_ATLAS_PHYSICAL__={"mountains": [{"id": "mtn:Great Dividing Range"
   let answering = false;
 
   function startRound(n) {
-    const pool = getActivePool().sort((a, b) => difficultyScore(b.id) - difficultyScore(a.id)).slice(0, n);
-    round = { questions: shuffle(pool), index: 0, streak: 0, misses: [] };
+    const pool = getActivePool().sort((a, b) => difficultyScore(statKey(b.id)) - difficultyScore(statKey(a.id))).slice(0, n);
+    round = { mode: currentMode, questions: shuffle(pool), index: 0, streak: 0, misses: [], results: [] };
+    document.getElementById("app").classList.add("in-round");
+    clearPin();
     document.getElementById("startOverlay").hidden = true;
     document.getElementById("summaryOverlay").hidden = true;
     document.getElementById("topbar").hidden = false;
@@ -1699,7 +1953,11 @@ window.__FIELD_ATLAS_PHYSICAL__={"mountains": [{"id": "mtn:Great Dividing Range"
     const q = round.questions[round.index];
     document.getElementById("promptIndex").textContent = round.index + 1;
     document.getElementById("promptName").textContent = q.display;
-    document.getElementById("promptKind").textContent = q.kind ? " · " + KIND_LABEL[q.kind] : "";
+    document.getElementById("promptVerb").textContent = round.mode === "neighbors" ? "BORDERS OF" : "FIND";
+    document.getElementById("promptKind").textContent = q.kind ? " · " + KIND_LABEL[q.kind]
+      : round.mode === "pinpoint" ? " · DROP A PIN" : "";
+    document.getElementById("nbrPanel").hidden = round.mode !== "neighbors";
+    if (round.mode === "neighbors") showNeighborQuestion(q);
     document.getElementById("hudStreak").textContent = round.streak;
     document.getElementById("hudRound").textContent = `${round.index + 1}/${round.questions.length}`;
   }
@@ -1715,8 +1973,153 @@ window.__FIELD_ATLAS_PHYSICAL__={"mountains": [{"id": "mtn:Great Dividing Range"
     document.getElementById("toast").classList.remove("show");
   }
 
+  // ---------- Pinpoint ----------
+
+  const PIN_MILES_PER_POINT = 10; // 100 points on or inside the border, one off per 10 miles, 0 past 1,000
+  const PIN_GOOD_POINTS = 80;     // counts as "got it" in your record (within 200 miles)
+
+  function pinPoints(miles) {
+    return Math.max(0, Math.round(100 - miles / PIN_MILES_PER_POINT));
+  }
+
+  function clearPin() {
+    pinLayer.selectAll("path").remove();
+  }
+
+  function drawPin(guess, nearest, inside) {
+    const items = [];
+    if (!inside) items.push({ cls: "pin-line", geo: { type: "LineString", coordinates: [guess, nearest] } });
+    if (!inside) items.push({ cls: "pin-near", r: 3.5, geo: { type: "Point", coordinates: nearest } });
+    items.push({ cls: "pin-guess" + (inside ? " inside" : ""), r: 5.5, geo: { type: "Point", coordinates: guess } });
+    pinLayer.selectAll("path").data(items).join("path")
+      .attr("class", (d) => d.cls)
+      .attr("d", (d) => pinPath.pointRadius(d.r || 4)(d.geo));
+  }
+
+  function fmtMiles(m) {
+    return m < 10 ? m.toFixed(1) : Math.round(m).toLocaleString();
+  }
+
+  function handlePin(event) {
+    const [mx, my] = d3.pointer(event, svg.node());
+    const ll = projection.invert([mx, my]);
+    if (!ll || !isFinite(ll[0]) || !isFinite(ll[1]) || !isFrontFacing(ll[0], ll[1], rotation)) return; // off the globe
+    const q = round.questions[round.index];
+    const inside = d3.geoContains(q.geometry, ll);
+    const near = inside ? { miles: 0, point: ll } : nearestBoundaryPoint(q, ll);
+    const pts = pinPoints(near.miles);
+
+    answering = true;
+    document.getElementById("app").classList.add("answering");
+    recordAnswer(statKey(q.id), pts >= PIN_GOOD_POINTS);
+    round.results.push({ id: q.id, points: pts, miles: near.miles });
+    round.streak = pts >= PIN_GOOD_POINTS ? round.streak + 1 : 0;
+    document.getElementById("hudStreak").textContent = round.streak;
+
+    const targetPath = g.select(`path[data-name="${cssEscape(q.id)}"]`);
+    targetPath.classed("flash-target", true);
+    drawPin(ll, near.point, inside);
+    if (inside) {
+      showToast("good", "Inside!", `${q.display} · 100 points`);
+    } else {
+      showToast(pts >= PIN_GOOD_POINTS ? "good" : "bad", `${fmtMiles(near.miles)} miles off`,
+        `${q.display} · ${pts} point${pts === 1 ? "" : "s"}`);
+      const mid = d3.geoInterpolate(ll, near.point)(0.5);
+      rotateTo(mid[0], mid[1], 700);
+    }
+
+    setTimeout(() => {
+      targetPath.classed("flash-target", false);
+      clearPin();
+      hideToast();
+      answering = false;
+      document.getElementById("app").classList.remove("answering");
+      round.index++;
+      if (round.index >= round.questions.length) endRound();
+      else showQuestion();
+    }, inside ? 1300 : 2800);
+  }
+
+  // ---------- Neighbors ----------
+
+  let nbr = null; // { q, truth: Set, picked: Set, checked }
+
+  function showNeighborQuestion(q) {
+    nbr = { q, truth: NEIGHBORS.get(q.id) || new Set(), picked: new Set(), checked: false };
+    document.getElementById("nbrHelp").innerHTML =
+      `Tap every country that shares a land border with <b></b>, then Check.`;
+    document.querySelector("#nbrHelp b").textContent = q.display;
+    const grid = document.getElementById("nbrGrid");
+    grid.innerHTML = "";
+    neighborChoices(q).forEach((id) => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "nbr-chip";
+      b.dataset.id = id;
+      b.textContent = displayNameFor(id);
+      b.setAttribute("aria-pressed", "false");
+      b.addEventListener("click", () => {
+        if (nbr.checked) return;
+        if (nbr.picked.has(id)) nbr.picked.delete(id); else nbr.picked.add(id);
+        b.classList.toggle("picked", nbr.picked.has(id));
+        b.setAttribute("aria-pressed", String(nbr.picked.has(id)));
+      });
+      grid.appendChild(b);
+    });
+    document.getElementById("nbrResult").textContent = "";
+    document.getElementById("nbrBtn").textContent = "Check";
+    document.getElementById("nbrPanel").scrollTop = 0;
+  }
+
+  function checkNeighbors() {
+    const { q, truth, picked } = nbr;
+    nbr.checked = true;
+    let hits = 0;
+    const missed = [], wrong = [];
+    document.querySelectorAll("#nbrGrid .nbr-chip").forEach((b) => {
+      const id = b.dataset.id;
+      const isN = truth.has(id), isP = picked.has(id);
+      b.disabled = true;
+      b.classList.remove("picked");
+      b.classList.add("checked");
+      const tag = (t) => { const s = document.createElement("span"); s.className = "nbr-tag"; s.textContent = t; b.appendChild(s); };
+      if (isN && isP) { hits++; b.classList.add("hit"); tag("✓ borders"); }
+      else if (isP) { wrong.push(id); b.classList.add("wrong"); tag("✗ doesn't border"); }
+      else if (isN) { missed.push(id); b.classList.add("missed"); tag("missed — borders"); }
+    });
+    const pts = Math.round((100 * hits) / (truth.size + wrong.length));
+    recordAnswer(statKey(q.id), pts === 100);
+    round.results.push({ id: q.id, points: pts, hits, total: truth.size, missed, wrong });
+    round.streak = pts === 100 ? round.streak + 1 : 0;
+    document.getElementById("hudStreak").textContent = round.streak;
+    document.getElementById("nbrResult").innerHTML =
+      `<b>${pts}</b> points · ${hits} of ${truth.size} border${truth.size === 1 ? "" : "s"}` +
+      (wrong.length ? ` · ${wrong.length} wrong` : "");
+    document.getElementById("nbrBtn").textContent =
+      round.index + 1 >= round.questions.length ? "Finish" : "Next";
+  }
+
+  function nextNeighbor() {
+    round.index++;
+    if (round.index >= round.questions.length) endRound();
+    else showQuestion();
+  }
+
+  document.getElementById("nbrBtn").addEventListener("click", () => {
+    if (!round || round.mode !== "neighbors" || !nbr) return;
+    if (nbr.checked) nextNeighbor(); else checkNeighbors();
+  });
+  document.addEventListener("keydown", (e) => {
+    if (e.key !== "Enter" || !round || round.mode !== "neighbors" || !nbr) return;
+    if (document.getElementById("nbrPanel").hidden) return;
+    e.preventDefault();
+    document.getElementById("nbrBtn").click();
+  });
+
   function handleAnswer(event) {
     if (!round || answering) return;
+    if (round.mode === "neighbors") return;
+    if (round.mode === "pinpoint") { handlePin(event); return; }
     const el = event.target.closest("path.country, circle.country-halo, path.country-halo-blob");
     if (!el) return; // missed all land — doesn't count as a guess, just try again
     const clickedKey = el.getAttribute("data-name");
@@ -1766,9 +2169,68 @@ window.__FIELD_ATLAS_PHYSICAL__={"mountains": [{"id": "mtn:Great Dividing Range"
     return window.CSS && CSS.escape ? CSS.escape(s) : s.replace(/["\\]/g, "\\$&");
   }
 
+  function endScoredRound() {
+    const res = round.results;
+    const total = res.length;
+    const pts = res.reduce((a, r) => a + r.points, 0);
+    document.getElementById("scoreFrac").innerHTML = `${pts.toLocaleString()}<span>/${(total * 100).toLocaleString()}</span>`;
+    const sub = document.getElementById("scoreSub");
+    const list = document.getElementById("missedList");
+    list.innerHTML = "";
+    const imperfect = res.filter((r) => r.points < 100);
+    if (round.mode === "pinpoint") {
+      const avg = total ? res.reduce((a, r) => a + r.miles, 0) / total : 0;
+      const inside = res.filter((r) => r.miles === 0).length;
+      sub.textContent = total ? `Average ${fmtMiles(avg)} miles off · ${inside} of ${total} inside` : "";
+      document.getElementById("missedLabel").textContent = "Farthest off";
+      imperfect.sort((a, b) => b.miles - a.miles);
+    } else {
+      const perfect = res.filter((r) => r.points === 100).length;
+      sub.textContent = total ? `${perfect} of ${total} perfect` : "";
+      document.getElementById("missedLabel").textContent = "Not quite";
+      imperfect.sort((a, b) => a.points - b.points);
+    }
+    sub.hidden = !total;
+    imperfect.forEach((r) => {
+      const li = document.createElement("li");
+      const name = document.createElement("span");
+      name.textContent = displayNameFor(r.id);
+      const detail = document.createElement("span");
+      detail.className = "miss-tally miss-detail";
+      if (round.mode === "pinpoint") {
+        detail.textContent = `${fmtMiles(r.miles)} mi · ${r.points} pts`;
+      } else {
+        const bits = [`${r.points} pts`];
+        if (r.missed.length) bits.push("missed " + r.missed.map(displayNameFor).join(", "));
+        if (r.wrong.length) bits.push("wrong " + r.wrong.map(displayNameFor).join(", "));
+        detail.textContent = bits.join(" · ");
+      }
+      li.appendChild(name);
+      li.appendChild(detail);
+      list.appendChild(li);
+    });
+    const noMisses = document.getElementById("noMisses");
+    noMisses.textContent = round.mode === "pinpoint" ? "Every pin landed inside." : "Every border right.";
+    noMisses.hidden = !(total && !imperfect.length);
+    document.getElementById("missedLabel").hidden = !imperfect.length;
+  }
+
   function endRound() {
     finishRound();
+    document.getElementById("app").classList.remove("in-round");
+    document.getElementById("nbrPanel").hidden = true;
+    clearPin();
+    nbr = null;
     document.getElementById("topbar").hidden = true;
+    if (SCORED_MODES.has(round.mode)) {
+      endScoredRound();
+      document.getElementById("summaryOverlay").hidden = false;
+      refreshHistoryPanel();
+      return;
+    }
+    document.getElementById("scoreSub").hidden = true;
+    document.getElementById("missedLabel").textContent = "Missed this round";
+    document.getElementById("noMisses").textContent = "Clean round — every country landed.";
     const total = round.questions.length;
     const missedCount = round.misses.length;
     const correctCount = total - missedCount;
@@ -1824,7 +2286,7 @@ window.__FIELD_ATLAS_PHYSICAL__={"mountains": [{"id": "mtn:Great Dividing Range"
     if (near) {
       lastTap = null;
       const target = document.elementFromPoint(e.clientX, e.clientY);
-      if (target) handleAnswer({ target });
+      if (target) handleAnswer({ target, clientX: e.clientX, clientY: e.clientY });
     } else {
       lastTap = { t: e.timeStamp, x: e.clientX, y: e.clientY };
     }
@@ -1847,6 +2309,7 @@ window.__FIELD_ATLAS_PHYSICAL__={"mountains": [{"id": "mtn:Great Dividing Range"
     if (!round || answering) return;
     round.questions = round.questions.slice(0, round.index);
     endRound();
+    round = null;
   });
 
   document.getElementById("resetStatsBtn").addEventListener("click", () => {

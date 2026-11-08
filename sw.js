@@ -1,7 +1,7 @@
 // Service worker: makes Field Atlas installable and fully playable offline
 // (the map data is inside index.html and d3 is served locally). Network-first
 // so updates show up as soon as you're online; falls back to the cache.
-const CACHE = "field-atlas-v1";
+const CACHE = "field-atlas-v2";
 const SHELL = ["./", "./index.html", "./d3.min.js", "./manifest.webmanifest",
                "./icon-192.png", "./icon-512.png", "./icon-maskable-512.png"];
 
