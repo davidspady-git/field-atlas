@@ -20,3 +20,13 @@ Two more modes:
 
 Single static page. Map data: Natural Earth (public domain). Uses d3 v7 (ISC).
 Installable as an app and playable offline.
+- **Name It** -- no borders, one country lit (a ring round tiny ones), the
+  globe turned and zoomed to it; tap its name out of 20: it and the 19
+  countries nearest it. Right = next at once; wrong = your pick shown in red
+  beside it, then Next. Built for a phone: the map fits between the prompt and
+  the names.
+
+Speed: shapes off screen aren't drawn, outlines are thinned to the screen's
+pixels (coarser while moving, sharp ~0.14 s after it stops), redraws are one
+per frame, and the map fills the whole screen shape (a phone too).
+

@@ -131,6 +131,7 @@
   #mapWrap {
     position: absolute;
     inset: 0;
+    overflow: hidden;
   }
 
   #mapSvg {
@@ -139,6 +140,7 @@
     display: block;
     touch-action: none;
     cursor: grab;
+    overflow: visible; /* a tall phone screen shows the map above/below the 960x520 view too */
   }
   #mapSvg:active { cursor: grabbing; }
   /* Double-clicking is how you answer, so nothing on the game screen should
@@ -574,19 +576,61 @@
 
   /* ---------- Pinpoint mode: one plain landmass, no borders ---------- */
 
-  #app[data-mode="pinpoint"] .country { pointer-events: none; }
+  #app[data-mode="pinpoint"] .country,
+  #app[data-mode="identify"] .country { pointer-events: none; }
   #app[data-mode="pinpoint"] .country.kind-country:not(.flash-target),
-  #app[data-mode="pinpoint"] .country.kind-context {
+  #app[data-mode="identify"] .country.kind-country:not(.id-target):not(.nb-wrong),
+  #app[data-mode="pinpoint"] .country.kind-context,
+  #app[data-mode="identify"] .country.kind-context {
     fill: var(--land);
     stroke: var(--land);
   }
-  #app[data-mode="pinpoint"] #labelsToggle { display: none; }
+  #app[data-mode="pinpoint"] #labelsToggle,
+  #app[data-mode="identify"] #labelsToggle { display: none; }
+
+  /* ---------- Name It: one country lit, 20 names to tap ---------- */
+
+  .country.id-target { fill: var(--accent); stroke: var(--accent-strong); }
+  .id-ring { fill: none; stroke: var(--accent-strong); stroke-width: 2.5; vector-effect: non-scaling-stroke; }
+  #app.in-round[data-mode="identify"] #zoomControls { display: none; }
+  #idPanel {
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    padding: 0 10px 10px;
+    display: flex;
+    justify-content: center;
+    z-index: 4;
+  }
+  #idPanel[hidden] { display: none; }
+  #idPanel .nbr-card { padding: 10px; max-width: 900px; min-width: 0; }
+  #idGrid {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 6px;
+  }
+  #idGrid .nbr-chip {
+    min-height: 42px;
+    padding: 6px 8px;
+    font-size: 13.5px;
+    line-height: 1.2;
+    text-align: center;
+    overflow-wrap: anywhere;
+    -webkit-tap-highlight-color: transparent;
+  }
+  #idGrid .nbr-chip.checked:not(.hit):not(.wrong) { opacity: 0.35; }
+  #idFoot { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
+  #idFoot[hidden] { display: none; }
+  #idResult { margin: 0; font-size: 14.5px; flex: 1; }
+  #idNext {
+    background: var(--accent); color: var(--accent-ink); border: none;
+    border-radius: 12px; padding: 11px 26px; font-size: 15px; font-weight: 700;
+  }
   #app[data-mode="pinpoint"] #mapSvg { cursor: crosshair; }
 
-  .pin-line { fill: none; stroke: var(--bad); stroke-width: 2; stroke-dasharray: 5 4; }
-  .pin-guess { fill: var(--ink); stroke: var(--panel); stroke-width: 1.5; }
+  .pin-line { fill: none; stroke: var(--bad); stroke-width: 2; stroke-dasharray: 5 4; vector-effect: non-scaling-stroke; }
+  .pin-guess { fill: var(--ink); stroke: var(--panel); stroke-width: 1.5; vector-effect: non-scaling-stroke; }
   .pin-guess.inside { fill: var(--good); }
-  .pin-near { fill: var(--accent-strong); stroke: var(--panel); stroke-width: 1; }
+  .pin-near { fill: var(--accent-strong); stroke: var(--panel); stroke-width: 1; vector-effect: non-scaling-stroke; }
 
   /* ---------- Neighbors mode: no map, a list to pick from ---------- */
 
@@ -706,7 +750,12 @@
   #scoreSub[hidden] { display: none; }
   .missed-list .miss-detail { text-align: right; }
 
+  @media (max-width: 700px) {
+    #idGrid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    #idGrid .nbr-chip { font-size: 12.5px; min-height: 40px; padding: 5px 6px; }
+  }
   @media (max-width: 560px) {
+    #app.in-round[data-mode="identify"] #hudCard { display: none; }
     #nbrPanel { padding-top: 215px; }
     #app.nbr-reveal:not(.nbr-list) #nbrPanel { padding-right: 80px; }
     .nbr-grid { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); }
@@ -766,12 +815,22 @@
     </div>
   </div>
 
+  <div id="idPanel" hidden>
+    <div class="nbr-card">
+      <div id="idGrid"></div>
+      <div id="idFoot" hidden>
+        <p id="idResult"></p>
+        <button id="idNext" type="button">Next</button>
+      </div>
+    </div>
+  </div>
+
   <div id="toast"><span class="toast-title"></span><span class="toast-detail"></span></div>
 
   <div class="overlay" id="startOverlay">
     <div class="card">
       <h1>Field Atlas</h1>
-      <p class="tagline">A spinning-globe naming drill — countries, mountain ranges, and lakes. Drag to rotate, scroll or pinch to zoom, then double-click (double-tap on a phone) what you're asked for. Miss one and it comes back around more often. <b>Pinpoint</b>: no borders, drop a pin where the country is, scored by miles off. <b>Neighbors</b>: no map, pick every country that borders it.</p>
+      <p class="tagline">A spinning-globe naming drill — countries, mountain ranges, and lakes. Drag to rotate, scroll or pinch to zoom, then double-click (double-tap on a phone) what you're asked for. Miss one and it comes back around more often. <b>Pinpoint</b>: no borders, drop a pin where the country is, scored by miles off. <b>Neighbors</b>: no map, pick every country that borders it. <b>Name It</b>: one country lights up, tap its name out of 20 nearby ones.</p>
 
       <div id="historyPanel" hidden>
         <p class="field-label">Your record</p>
@@ -1149,6 +1208,9 @@ window.__FIELD_ATLAS_PHYSICAL__={"mountains": [{"id": "mtn:Great Dividing Range"
   const labelLayer = svg.append("g").attr("id", "labelLayer");
 
   projection.fitSize([WIDTH, HEIGHT], { type: "Sphere" });
+  // Cut every shape to the window (with a margin), so zoomed in, a big
+  // country's off-screen coastline isn't handed to the browser to draw.
+  projection.clipExtent([[-40, -40], [WIDTH + 40, HEIGHT + 40]]);
   const baseScale = projection.scale() * 0.92;
   projection.scale(baseScale);
 
@@ -1169,15 +1231,141 @@ window.__FIELD_ATLAS_PHYSICAL__={"mountains": [{"id": "mtn:Great Dividing Range"
     return (km / EARTH_RADIUS_KM) * projection.scale();
   }
 
-  function redraw() {
+  // ---------- drawing speed ----------
+  //
+  // Three things keep dragging/zooming quick, phones especially:
+  //  * shapes wholly on the far side of the globe aren't drawn at all;
+  //  * zoomed out, each shape is drawn from a thinned copy of its outline
+  //    (points closer together than ~0.8 screen units dropped -- invisible);
+  //  * drag/zoom redraw at most once per screen frame.
+  // Clicks, hit tests and distances still use the full outlines.
+  const LOD_TOLERANCES = [1.2, 0.5, 0.25, 0.12, 0.06, 0.03]; // degrees; finer than the last = full detail
+  const LOD_MAX_PX = 0.9;      // at rest: a dropped point is never more than this many screen pixels off
+  const LOD_MOVING_PX = 3.5;   // while the globe is moving: coarser, then sharpened when it stops
+  const SHARPEN_AFTER_MS = 140;
+
+  function thinRing(ring, tol) {
+    const out = [ring[0]];
+    let last = ring[0];
+    for (let i = 1; i < ring.length - 1; i++) {
+      const pt = ring[i];
+      const dx = (pt[0] - last[0]) * Math.cos(pt[1] * RAD), dy = pt[1] - last[1];
+      if (dx * dx + dy * dy >= tol * tol) { out.push(pt); last = pt; }
+    }
+    out.push(ring[ring.length - 1]);
+    return out;
+  }
+
+  function thinGeometry(geo, tol) {
+    const polys = toPolygonList(geo);
+    const kept = [];
+    let biggest = null, biggestLen = -1;
+    polys.forEach((rings) => {
+      if (rings[0].length > biggestLen) { biggestLen = rings[0].length; biggest = rings; }
+      const outer = thinRing(rings[0], tol);
+      if (outer.length < 4) return; // smaller than the tolerance: invisible at this zoom
+      const holes = rings.slice(1).map((r) => thinRing(r, tol)).filter((r) => r.length >= 4);
+      // Thinning can turn a ring inside out (Antarctica's runs along the
+      // pole), which would paint the whole globe as land: if the area
+      // changes much, keep this piece unthinned.
+      const before = d3.geoArea({ type: "Polygon", coordinates: [rings[0]] });
+      const after = d3.geoArea({ type: "Polygon", coordinates: [outer] });
+      if (Math.abs(after - before) > 0.25 * before + 1e-7) { kept.push(rings); return; }
+      kept.push([outer].concat(holes));
+    });
+    if (!kept.length && biggest) kept.push(biggest); // never lose a whole (tiny) country
+    return { type: "MultiPolygon", coordinates: kept };
+  }
+
+  // Screen pixels per map unit (the 960x520 view is scaled to fit the window).
+  // The view is drawn in a 960x520 box scaled to fit the screen; on a screen
+  // of another shape the map runs past that box, so clip and cull against the
+  // real screen (in map units), not the box.
+  let pxPerUnit = 1, screenHalfW = WIDTH / 2, screenHalfH = HEIGHT / 2;
+  function measureScreen() {
+    const r = svg.node().getBoundingClientRect();
+    if (!r.width || !r.height) return;
+    pxPerUnit = Math.min(r.width / WIDTH, r.height / HEIGHT);
+    screenHalfW = r.width / pxPerUnit / 2;
+    screenHalfH = r.height / pxPerUnit / 2;
+    const m = 40;
+    projection.clipExtent([[WIDTH / 2 - screenHalfW - m, HEIGHT / 2 - screenHalfH - m],
+                           [WIDTH / 2 + screenHalfW + m, HEIGHT / 2 + screenHalfH + m]]);
+  }
+  window.addEventListener("resize", () => { measureScreen(); scheduleRedraw(); });
+
+  function lodLevel(moving) {
+    const pxPerDeg = projection.scale() * RAD * pxPerUnit;
+    const maxPx = moving ? LOD_MOVING_PX : LOD_MAX_PX;
+    for (let i = 0; i < LOD_TOLERANCES.length; i++) {
+      if (LOD_TOLERANCES[i] * pxPerDeg <= maxPx) return i;
+    }
+    return -1; // full detail
+  }
+
+  function lodGeometry(d, level) {
+    if (level < 0) return d.geometry;
+    d._lod = d._lod || [];
+    if (!d._lod[level]) d._lod[level] = { type: "Feature", geometry: thinGeometry(d.geometry.geometry, LOD_TOLERANCES[level]) };
+    return d._lod[level];
+  }
+
+  // A cap (centre + angular radius) that holds the whole shape, for skipping
+  // shapes on the far side.
+  function capOf(d) {
+    if (!d._cap) {
+      const polys = toPolygonList(d.geometry.geometry);
+      let c = d.lonlat || d3.geoCentroid(d.geometry);
+      if (!c || !isFinite(c[0]) || !isFinite(c[1])) c = polys[0] && polys[0][0][0] || [0, 0];
+      let r = 0;
+      polys.forEach((rings) => rings[0].forEach((pt) => { r = Math.max(r, d3.geoDistance(c, pt)); }));
+      d._cap = { c, r };
+    }
+    return d._cap;
+  }
+
+  // How far from the centre of the view (in angle) the screen reaches: the
+  // far side of the globe when zoomed out, much less when zoomed in.
+  function viewReach() {
+    const halfDiag = Math.hypot(screenHalfW, screenHalfH);
+    return halfDiag >= projection.scale() ? Math.PI / 2 : Math.asin(halfDiag / projection.scale());
+  }
+
+  function offScreen(d, centre, reach) {
+    const cap = capOf(d);
+    return d3.geoDistance(cap.c, centre) - cap.r > reach + 0.02;
+  }
+
+  let redrawQueued = false, sharpenTimer = null;
+  function scheduleRedraw() {
+    if (redrawQueued) return;
+    redrawQueued = true;
+    requestAnimationFrame(() => { redrawQueued = false; redraw(true); });
+  }
+
+  // redraw(true) = mid-movement: coarse now, full detail once things settle.
+  function redraw(moving) {
+    clearTimeout(sharpenTimer);
+    if (moving) sharpenTimer = setTimeout(() => redraw(false), SHARPEN_AFTER_MS);
     svg.select(".sphere").attr("d", path);
     graticuleLayer.attr("d", path);
-    g.selectAll("path.country").attr("d", (d) => path(d.geometry));
+    const level = lodLevel(moving);
+    const centre = [-rotation[0], -rotation[1]], reach = viewReach();
+    g.selectAll("path.country").attr("d", (d) => {
+      if (d.kind === "mountain" && currentMode !== "mountains") return null; // hidden anyway
+      if (offScreen(d, centre, reach)) return null;
+      return path(lodGeometry(d, level));
+    });
     updateHalos();
     updateLabels();
-    pinLayer.selectAll("path").attr("d", (d) => pinPath.pointRadius(d.r || 4)(d.geo));
+    pinLayer.selectAll("path").attr("d", (d) => pinPath.pointRadius(pinRadius(d))(d.geo));
     placeRevealLabels();
   }
+
+  // Markers and names are sized in map units, which a phone shrinks a lot;
+  // scale them back up so they're never smaller than on a desktop.
+  function unitScale() { return 1 / Math.min(1, pxPerUnit); }
+  function pinRadius(d) { return (d.r || 4) * unitScale(); }
 
   // Names on the Neighbors reveal map: the country and everything coloured.
   let revealLabels = [];
@@ -1185,6 +1373,8 @@ window.__FIELD_ATLAS_PHYSICAL__={"mountains": [{"id": "mtn:Great Dividing Range"
     const shown = revealLabels.filter((d) => isFrontFacing(d.lonlat[0], d.lonlat[1], rotation));
     revealLabelLayer.selectAll("text").data(shown, (d) => d.id).join("text")
       .attr("class", (d) => "reveal-label" + (d.target ? " target" : ""))
+      .style("font-size", (d) => (d.target ? 15 : 12) * unitScale() + "px")
+      .style("stroke-width", 3 * unitScale() + "px")
       .attr("x", (d) => projection(d.lonlat)[0])
       .attr("y", (d) => projection(d.lonlat)[1])
       .text((d) => d.text);
@@ -1449,7 +1639,7 @@ window.__FIELD_ATLAS_PHYSICAL__={"mountains": [{"id": "mtn:Great Dividing Range"
     d3.transition().duration(duration).ease(d3.easeCubicInOut).tween("globeRotate", () => (t) => {
       rotation = interp(t);
       projection.rotate(rotation);
-      redraw();
+      redraw(t < 1);
     });
   }
 
@@ -1458,7 +1648,7 @@ window.__FIELD_ATLAS_PHYSICAL__={"mountains": [{"id": "mtn:Great Dividing Range"
     d3.transition().duration(duration).ease(d3.easeCubicInOut).tween("globeReset", () => (t) => {
       rotation = interp(t);
       projection.rotate(rotation);
-      redraw();
+      redraw(t < 1);
     });
     svg.transition().duration(duration).call(zoomBehavior.transform, d3.zoomIdentity);
   }
@@ -1472,7 +1662,7 @@ window.__FIELD_ATLAS_PHYSICAL__={"mountains": [{"id": "mtn:Great Dividing Range"
     })
     .on("zoom", (event) => {
       projection.scale(baseScale * event.transform.k);
-      redraw();
+      scheduleRedraw();
     });
 
   const rotateDrag = d3.drag()
@@ -1490,7 +1680,7 @@ window.__FIELD_ATLAS_PHYSICAL__={"mountains": [{"id": "mtn:Great Dividing Range"
       rotation[0] += event.dx * sensitivity;
       rotation[1] = Math.max(-90, Math.min(90, rotation[1] - event.dy * sensitivity));
       projection.rotate(rotation);
-      redraw();
+      scheduleRedraw();
     });
 
   svg.call(zoomBehavior).on("dblclick.zoom", null);
@@ -1516,6 +1706,7 @@ window.__FIELD_ATLAS_PHYSICAL__={"mountains": [{"id": "mtn:Great Dividing Range"
   function displayNameFor(key) {
     if (key.startsWith("pin:")) return displayNameFor(key.slice(4)) + " (pin)";
     if (key.startsWith("nbr:")) return displayNameFor(key.slice(4)) + " (neighbors)";
+    if (key.startsWith("id:")) return displayNameFor(key.slice(3)) + " (name it)";
     if (COUNTRY_DISPLAY[key]) return COUNTRY_DISPLAY[key];
     if (CONTEXT_DISPLAY[key]) return CONTEXT_DISPLAY[key];
     const p = PHYSICAL_FEATURES.find((f) => f.id === key);
@@ -1640,6 +1831,7 @@ window.__FIELD_ATLAS_PHYSICAL__={"mountains": [{"id": "mtn:Great Dividing Range"
         })
         .attr("data-name", (d) => d.id);
 
+      measureScreen();
       redraw();
 
       mapReady = true;
@@ -1787,18 +1979,18 @@ window.__FIELD_ATLAS_PHYSICAL__={"mountains": [{"id": "mtn:Great Dividing Range"
   // ---------- mode + region selection UI ----------
 
   let currentMode = "countries"; // "countries" | "mountains" | "lakes" | "pinpoint" | "neighbors"
-  const MODES = ["countries", "mountains", "lakes", "pinpoint", "neighbors"];
-  const MODE_LABELS = { countries: "Countries", mountains: "Mountain Ranges", lakes: "Lakes", pinpoint: "Pinpoint", neighbors: "Neighbors" };
+  const MODES = ["countries", "mountains", "lakes", "pinpoint", "neighbors", "identify"];
+  const MODE_LABELS = { countries: "Countries", mountains: "Mountain Ranges", lakes: "Lakes", pinpoint: "Pinpoint", neighbors: "Neighbors", identify: "Name It" };
   const MODE_POOL_LABELS = {
     countries: "Countries this round", mountains: "Mountain ranges this round", lakes: "Lakes this round",
-    pinpoint: "Countries this round", neighbors: "Countries this round",
+    pinpoint: "Countries this round", neighbors: "Countries this round", identify: "Countries this round",
   };
   const SCORED_MODES = new Set(["pinpoint", "neighbors"]); // points out of 100 per question, not right/wrong
 
   // Stats keys: plain country names stay Countries mode's (as before); the
   // new modes keep their own record so a country can be easy to click but
   // hard to pin, or to list the neighbors of.
-  const STAT_PREFIX = { pinpoint: "pin:", neighbors: "nbr:" };
+  const STAT_PREFIX = { pinpoint: "pin:", neighbors: "nbr:", identify: "id:" };
   function statKey(id) { return (STAT_PREFIX[currentMode] || "") + id; }
 
   function getActivePool() {
@@ -1807,6 +1999,7 @@ window.__FIELD_ATLAS_PHYSICAL__={"mountains": [{"id": "mtn:Great Dividing Range"
     if (currentMode === "lakes") return PHYSICAL_FEATURES.filter((f) => f.kind === "lake");
     if (currentMode === "pinpoint") return FEATURES.filter((f) => selectedRegions.has(regionOf(f.id)));
     if (currentMode === "neighbors") return FEATURES.filter((f) => NEIGHBORS.has(f.id));
+    if (currentMode === "identify") return FEATURES.filter((f) => selectedRegions.has(regionOf(f.id)));
     return [];
   }
 
@@ -1837,6 +2030,7 @@ window.__FIELD_ATLAS_PHYSICAL__={"mountains": [{"id": "mtn:Great Dividing Range"
       lakes: PHYSICAL_FEATURES.filter((f) => f.kind === "lake").length,
       pinpoint: FEATURES.length,
       neighbors: FEATURES.filter((f) => NEIGHBORS.has(f.id)).length,
+      identify: FEATURES.length,
     };
     MODES.forEach((mode) => {
       const chip = document.createElement("button");
@@ -1855,7 +2049,7 @@ window.__FIELD_ATLAS_PHYSICAL__={"mountains": [{"id": "mtn:Great Dividing Range"
   }
 
   function onModeChanged() {
-    document.getElementById("regionSection").hidden = currentMode !== "countries" && currentMode !== "pinpoint";
+    document.getElementById("regionSection").hidden = !["countries", "pinpoint", "identify"].includes(currentMode);
     document.getElementById("poolLabel").textContent = MODE_POOL_LABELS[currentMode];
     document.getElementById("app").dataset.mode = currentMode;
     buildPoolChips();
@@ -2037,7 +2231,13 @@ window.__FIELD_ATLAS_PHYSICAL__={"mountains": [{"id": "mtn:Great Dividing Range"
     document.getElementById("promptKind").textContent = q.kind ? " · " + KIND_LABEL[q.kind]
       : round.mode === "pinpoint" ? " · DROP A PIN" : "";
     document.getElementById("nbrPanel").hidden = round.mode !== "neighbors";
+    document.getElementById("idPanel").hidden = round.mode !== "identify";
     if (round.mode === "neighbors") showNeighborQuestion(q);
+    if (round.mode === "identify") {
+      document.getElementById("promptVerb").textContent = "NAME IT";
+      document.getElementById("promptName").textContent = "Which country?";
+      showIdentifyQuestion(q);
+    }
     document.getElementById("hudStreak").textContent = round.streak;
     document.getElementById("hudRound").textContent = `${round.index + 1}/${round.questions.length}`;
   }
@@ -2073,7 +2273,7 @@ window.__FIELD_ATLAS_PHYSICAL__={"mountains": [{"id": "mtn:Great Dividing Range"
     items.push({ cls: "pin-guess" + (inside ? " inside" : ""), r: 5.5, geo: { type: "Point", coordinates: guess } });
     pinLayer.selectAll("path").data(items).join("path")
       .attr("class", (d) => d.cls)
-      .attr("d", (d) => pinPath.pointRadius(d.r || 4)(d.geo));
+      .attr("d", (d) => pinPath.pointRadius(pinRadius(d))(d.geo));
   }
 
   function fmtMiles(m) {
@@ -2224,6 +2424,138 @@ window.__FIELD_ATLAS_PHYSICAL__={"mountains": [{"id": "mtn:Great Dividing Range"
     e.currentTarget.textContent = listing ? "Show map" : "Show list";
   });
 
+  // ---------- Name It ----------
+
+  let idq = null; // { q, answered }
+
+  // Keep the globe in the space the topbar and the name list leave free,
+  // so the lit country isn't hidden behind them on a phone.
+  function layoutIdentify() {
+    const wrap = document.getElementById("mapWrap");
+    if (!round || round.mode !== "identify" || document.getElementById("idPanel").hidden) {
+      wrap.style.top = ""; wrap.style.bottom = "";
+      measureScreen();
+      return;
+    }
+    const narrow = window.innerWidth <= 560;
+    const tb = document.getElementById("topbar").getBoundingClientRect().bottom;
+    wrap.style.top = (narrow ? Math.round(tb) : 0) + "px";
+    wrap.style.bottom = document.getElementById("idPanel").offsetHeight + "px";
+    measureScreen();
+  }
+  window.addEventListener("resize", layoutIdentify);
+
+  // Turn to `center` and zoom so a circle of `radius` (radians) round it fills the view.
+  function fitView(center, radius, duration) {
+    const r = Math.min(Math.max(radius, 0.004), Math.PI / 2);
+    const k = Math.max(1, Math.min(MAX_ZOOM_K, (0.42 * HEIGHT) / (Math.sin(r) * baseScale)));
+    rotateTo(center[0], center[1], duration);
+    svg.transition().duration(duration).call(zoomBehavior.transform, d3.zoomIdentity.scale(k));
+  }
+
+  function extentOf(f) {
+    let far = 0;
+    borderSample(f).forEach((v) => { far = Math.max(far, d3.geoDistance(f.lonlat, toLonLat(v))); });
+    return far;
+  }
+
+  const ID_CHOICES = 20;
+  const ID_MIN_VIEW = 9 * RAD; // never closer than ~9° across, so there's coastline to go on
+
+  function clearIdentify() {
+    g.selectAll("path.kind-country").classed("id-target nb-wrong", false);
+    clearPin();
+    revealLabels = [];
+    revealLabelLayer.selectAll("text").remove();
+  }
+
+  function showIdentifyQuestion(q) {
+    clearIdentify();
+    idq = { q, answered: false };
+    g.select(`path[data-name="${cssEscape(q.id)}"]`).classed("id-target", true);
+    if (q.showHighlight) {
+      pinLayer.selectAll("path").data([{ cls: "id-ring", r: 16, geo: { type: "Point", coordinates: q.lonlat } }])
+        .join("path").attr("class", (d) => d.cls);
+    }
+    const others = FEATURES.filter((f) => f.id !== q.id)
+      .map((f) => ({ id: f.id, gap: countryGap(q, f) }))
+      .sort((a, b) => a.gap - b.gap)
+      .slice(0, ID_CHOICES - 1)
+      .map((x) => x.id);
+    const ids = others.concat([q.id]).sort((a, b) => displayNameFor(a).localeCompare(displayNameFor(b)));
+    const grid = document.getElementById("idGrid");
+    grid.innerHTML = "";
+    ids.forEach((id) => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "nbr-chip";
+      b.dataset.id = id;
+      b.textContent = displayNameFor(id);
+      b.addEventListener("click", () => answerIdentify(id));
+      grid.appendChild(b);
+    });
+    document.getElementById("idFoot").hidden = true;
+    layoutIdentify();
+    fitView(q.lonlat, Math.max(extentOf(q) * 1.8, ID_MIN_VIEW), 600);
+  }
+
+  function answerIdentify(id) {
+    if (!idq || idq.answered) return;
+    const q = idq.q;
+    idq.answered = true;
+    const correct = id === q.id;
+    recordAnswer(statKey(q.id), correct);
+    document.querySelectorAll("#idGrid .nbr-chip").forEach((b) => {
+      b.disabled = true;
+      b.classList.add("checked");
+      if (b.dataset.id === q.id) b.classList.add("hit");
+      else if (b.dataset.id === id) b.classList.add("wrong");
+    });
+    if (correct) {
+      round.streak++;
+      document.getElementById("hudStreak").textContent = round.streak;
+      revealLabels = [{ id: q.id, text: q.display, lonlat: q.lonlat, target: true }];
+      placeRevealLabels();
+      setTimeout(nextIdentify, 900);
+      return;
+    }
+    round.streak = 0;
+    round.misses.push(q.id);
+    document.getElementById("hudStreak").textContent = 0;
+    // Show where your pick really is, next to the right one.
+    const pick = featureById(id);
+    g.select(`path[data-name="${cssEscape(id)}"]`).classed("nb-wrong", true);
+    revealLabels = [{ id: q.id, text: q.display, lonlat: q.lonlat, target: true }];
+    if (pick && pick.lonlat) {
+      revealLabels.push({ id: pick.id, text: pick.display, lonlat: pick.lonlat });
+      const gap = d3.geoDistance(q.lonlat, pick.lonlat);
+      const mid = d3.geoInterpolate(q.lonlat, pick.lonlat)(0.5);
+      fitView(mid, Math.max(gap / 2 + Math.max(extentOf(q), extentOf(pick)), ID_MIN_VIEW), 700);
+    }
+    placeRevealLabels();
+    const res = document.getElementById("idResult");
+    res.innerHTML = "It's <b></b>, not <span></span>.";
+    res.querySelector("b").textContent = q.display;
+    res.querySelector("span").textContent = pick ? pick.display : id;
+    document.getElementById("idFoot").hidden = false;
+    layoutIdentify();
+  }
+
+  function nextIdentify() {
+    if (!round || round.mode !== "identify") return;
+    idq = null;
+    round.index++;
+    if (round.index >= round.questions.length) endRound();
+    else showQuestion();
+  }
+  document.getElementById("idNext").addEventListener("click", nextIdentify);
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && idq && idq.answered && !document.getElementById("idFoot").hidden) {
+      e.preventDefault();
+      nextIdentify();
+    }
+  });
+
   function nextNeighbor() {
     clearNeighborMap();
     round.index++;
@@ -2244,7 +2576,7 @@ window.__FIELD_ATLAS_PHYSICAL__={"mountains": [{"id": "mtn:Great Dividing Range"
 
   function handleAnswer(event) {
     if (!round || answering) return;
-    if (round.mode === "neighbors") return;
+    if (round.mode === "neighbors" || round.mode === "identify") return;
     if (round.mode === "pinpoint") { handlePin(event); return; }
     const el = event.target.closest("path.country, circle.country-halo, path.country-halo-blob");
     if (!el) return; // missed all land — doesn't count as a guess, just try again
@@ -2347,6 +2679,9 @@ window.__FIELD_ATLAS_PHYSICAL__={"mountains": [{"id": "mtn:Great Dividing Range"
     document.getElementById("nbrPanel").hidden = true;
     clearPin();
     clearNeighborMap();
+    clearIdentify();
+    document.getElementById("idPanel").hidden = true;
+    layoutIdentify();
     nbr = null;
     document.getElementById("topbar").hidden = true;
     if (SCORED_MODES.has(round.mode)) {
@@ -2434,7 +2769,9 @@ window.__FIELD_ATLAS_PHYSICAL__={"mountains": [{"id": "mtn:Great Dividing Range"
 
   document.getElementById("quitBtn").addEventListener("click", () => {
     if (!round || answering) return;
-    round.questions = round.questions.slice(0, round.index);
+    const answeredHere = round.mode === "identify" && idq && idq.answered;
+    idq = null;
+    round.questions = round.questions.slice(0, round.index + (answeredHere ? 1 : 0));
     endRound();
     round = null;
   });
