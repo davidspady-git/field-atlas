@@ -747,6 +747,55 @@
   }
   .reveal-label.target { font-size: 15px; font-weight: 800; }
 
+  /* ---------- Settings sheet ---------- */
+
+  #settingsBtn {
+    width: 100%;
+    margin-top: 10px;
+    background: transparent;
+    border: 1.5px solid var(--panel-border);
+    color: var(--ink);
+    border-radius: 13px;
+    padding: 11px;
+    font-size: 15px;
+    font-weight: 600;
+  }
+  #settingsBtn:hover { border-color: var(--ink-soft); }
+  #settingsOverlay { z-index: 20; }
+  .set-group { margin-bottom: 18px; }
+  .set-row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    gap: 2px 12px;
+    margin-bottom: 12px;
+  }
+  .set-row label { font-size: 14px; font-weight: 600; }
+  .set-row .set-val { font-family: "IBM Plex Mono", monospace; font-size: 13px; color: var(--ink-soft); text-align: right; }
+  .set-row input[type="range"] { grid-column: 1 / -1; width: 100%; accent-color: var(--accent-strong); height: 28px; }
+  .set-row .set-hint { grid-column: 1 / -1; font-size: 12px; color: var(--ink-soft); margin: -2px 0 0; }
+  .set-colours { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 10px; }
+  .set-colours label { display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; }
+  .set-colours input[type="color"] {
+    width: 100%; height: 44px; border: 1.5px solid var(--panel-border); border-radius: 10px;
+    background: transparent; padding: 3px; cursor: pointer;
+  }
+  .set-presets { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 4px; }
+  .set-presets button {
+    border: 1.5px solid var(--panel-border); background: transparent; color: var(--ink);
+    border-radius: 999px; padding: 6px 12px; font-size: 13px; font-weight: 600;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .set-presets button i { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
+  .set-check { display: flex; align-items: center; gap: 10px; font-size: 14px; font-weight: 600; margin-bottom: 12px; }
+  .set-check input { width: 18px; height: 18px; accent-color: var(--accent-strong); }
+  .set-actions { display: flex; gap: 10px; }
+  .set-actions button {
+    flex: 1; border-radius: 13px; padding: 13px; font-size: 15px; font-weight: 700;
+  }
+  #settingsReset { background: transparent; border: 1.5px solid var(--panel-border); color: var(--ink-soft); }
+  #settingsDone { background: var(--accent); color: var(--accent-ink); border: none; }
+
   #scoreSub { text-align: center; color: var(--ink-soft); font-size: 14px; margin: -8px 0 18px; }
   #scoreSub[hidden] { display: none; }
   .missed-list .miss-detail { text-align: right; }
@@ -869,6 +918,7 @@
       </div>
 
       <button id="startBtn" disabled>Loading map…</button>
+      <button id="settingsBtn" type="button">Settings</button>
       <p id="mapErrorDetail" class="mono" hidden style="font-size:11px; color:var(--bad); margin:8px 0 0; word-break:break-word;"></p>
 
       <div class="howto">
@@ -876,6 +926,57 @@
         <span>Once a pool drops below everything in a mode, it's rebuilt each round from whichever items currently give you the most trouble. Countries too small to click precisely (Vatican City, Kiribati, Nauru…) get a faint marker that lights up as your cursor gets close; in Lakes mode, every lake gets that marker, since some are tiny. A miss auto-rotates the globe to reveal where the answer actually was. Pinpoint scores 100 for a pin on or inside the country, one point less per 10 miles off. Neighbors scores the borders you got as a share of the real ones plus any wrong picks.</span>
       </div>
       <button class="resetLink" id="resetStatsBtn">Reset my saved progress</button>
+    </div>
+  </div>
+
+  <div class="overlay" id="settingsOverlay" hidden>
+    <div class="card">
+      <h1>Settings</h1>
+      <p class="tagline">Changes apply as you make them and are kept on this device.</p>
+
+      <div class="set-group">
+        <p class="field-label">Moving the globe</p>
+        <div class="set-row">
+          <label for="setZoom">Zoom speed</label><span class="set-val" id="setZoomVal"></span>
+          <input type="range" id="setZoom" min="1" max="2.5" step="0.1">
+          <p class="set-hint">How much a pinch, scroll or +/− zooms. 1× follows your fingers exactly.</p>
+        </div>
+        <div class="set-row">
+          <label for="setPan">Pan speed</label><span class="set-val" id="setPanVal"></span>
+          <input type="range" id="setPan" min="0.5" max="3" step="0.1">
+          <p class="set-hint">How far the globe turns for a drag. 1× = the land follows your finger.</p>
+        </div>
+      </div>
+
+      <div class="set-group">
+        <p class="field-label">After a guess</p>
+        <div class="set-row">
+          <label for="setRight">Time after a right answer</label><span class="set-val" id="setRightVal"></span>
+          <input type="range" id="setRight" min="0.3" max="4" step="0.1">
+        </div>
+        <div class="set-row">
+          <label for="setWrong">Time after a wrong answer</label><span class="set-val" id="setWrongVal"></span>
+          <input type="range" id="setWrong" min="0.5" max="8" step="0.1">
+          <p class="set-hint">Also Pinpoint pins that land outside the country.</p>
+        </div>
+        <label class="set-check"><input type="checkbox" id="setWaitNext"> Name It: wait for Next after a wrong answer</label>
+        <p class="set-hint" style="font-size:12px;color:var(--ink-soft);margin:-6px 0 0;">Neighbors always waits for Next.</p>
+      </div>
+
+      <div class="set-group">
+        <p class="field-label">Colours</p>
+        <div class="set-presets" id="setPresets"></div>
+        <div class="set-colours" style="margin-top:12px">
+          <label>Land<input type="color" id="setLand"></label>
+          <label>Water<input type="color" id="setWater"></label>
+          <label>Highlight<input type="color" id="setAccent"></label>
+        </div>
+      </div>
+
+      <div class="set-actions">
+        <button id="settingsReset" type="button">Reset all</button>
+        <button id="settingsDone" type="button">Done</button>
+      </div>
     </div>
   </div>
 
@@ -1695,10 +1796,54 @@ window.__FIELD_ATLAS_PHYSICAL__={"mountains": [{"id": "mtn:Great Dividing Range"
     svg.transition().duration(duration).call(zoomBehavior.transform, d3.zoomIdentity);
   }
 
-  // Zoom gain: the globe's zoom = (gesture's zoom)^ZOOM_GAIN, so a pinch,
-  // scroll or +/- tap covers 1.5x as much ground (in log terms) as it would 1:1.
-  const ZOOM_GAIN = 1.5;
-  const gestureK = (k) => Math.pow(k, 1 / ZOOM_GAIN); // globe zoom -> d3 zoom transform
+  // ---------- settings (the Settings sheet; kept per device) ----------
+
+  const SETTINGS_KEY = "field_atlas_settings_v1";
+  const SETTINGS_DEFAULTS = {
+    zoomGain: 1.5,    // globe zoom = (gesture zoom)^zoomGain
+    panSpeed: 1.5,    // 1 = the land follows your finger (the old 80 units)
+    rightDelay: 0.9,  // seconds before moving on after a right answer
+    wrongDelay: 2.5,  // ... after a wrong one (and an off-target pin)
+    idWaitNext: true, // Name It: wait for Next after a wrong answer
+    land: null, water: null, accent: null, // null = the theme's own colour
+  };
+  function loadSettings() {
+    try { return Object.assign({}, SETTINGS_DEFAULTS, JSON.parse(localStorage.getItem(SETTINGS_KEY) || "{}")); }
+    catch (e) { return Object.assign({}, SETTINGS_DEFAULTS); }
+  }
+  let settings = loadSettings();
+  function saveSettings() {
+    try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); } catch (e) {}
+  }
+
+  // Colours: set on the page root, so they win over both light and dark
+  // themes; hover/edge shades are mixed from the chosen colour.
+  function applyColours() {
+    const st = document.documentElement.style;
+    const set = (name, v) => v ? st.setProperty(name, v) : st.removeProperty(name);
+    const L = settings.land, W = settings.water, A = settings.accent;
+    set("--land", L);
+    set("--land-hover", L && `color-mix(in srgb, ${L} 85%, black)`);
+    set("--land-stroke", L && `color-mix(in srgb, ${L} 65%, black)`);
+    set("--water", W);
+    set("--lake", W && `color-mix(in srgb, ${W} 75%, black)`);
+    set("--lake-stroke", W && `color-mix(in srgb, ${W} 55%, black)`);
+    set("--accent", A);
+    set("--accent-strong", A && `color-mix(in srgb, ${A} 82%, black)`);
+  }
+  applyColours();
+
+  const COLOUR_PRESETS = [
+    { name: "Theme", land: null, water: null, accent: null },
+    { name: "High contrast", land: "#E8E3C8", water: "#2F6E9E", accent: "#E0442B" },
+    { name: "Parchment", land: "#EADCB8", water: "#7FA7B5", accent: "#B4442A" },
+    { name: "Atlas", land: "#C9D9A3", water: "#4F8FC0", accent: "#D97A1E" },
+    { name: "Night", land: "#5E7A55", water: "#0A1F2B", accent: "#F0A24A" },
+  ];
+
+  // Zoom gain: the globe's zoom = (gesture's zoom)^gain, so a pinch, scroll
+  // or +/- tap covers `gain` times as much ground (in log terms) as 1:1.
+  const gestureK = (k) => Math.pow(k, 1 / settings.zoomGain); // globe zoom -> d3 zoom transform
 
   const zoomBehavior = d3.zoom()
     .scaleExtent([gestureK(0.6), gestureK(MAX_ZOOM_K)])
@@ -1708,13 +1853,10 @@ window.__FIELD_ATLAS_PHYSICAL__={"mountains": [{"id": "mtn:Great Dividing Range"
       return false;
     })
     .on("zoom", (event) => {
-      projection.scale(baseScale * Math.pow(event.transform.k, ZOOM_GAIN));
+      projection.scale(baseScale * Math.pow(event.transform.k, settings.zoomGain));
       scheduleRedraw();
     });
 
-  // How far the globe turns per unit dragged (80 = the land follows your
-  // finger roughly; higher turns it further for the same swipe).
-  const DRAG_SPEED = 120;
 
   const rotateDrag = d3.drag()
     .filter((event) => event.type !== "touchstart" || event.touches.length === 1)
@@ -1727,7 +1869,7 @@ window.__FIELD_ATLAS_PHYSICAL__={"mountains": [{"id": "mtn:Great Dividing Range"
         window.dispatchEvent(new MouseEvent("mouseup", { view: window, clientX: src.clientX, clientY: src.clientY }));
         return;
       }
-      const sensitivity = DRAG_SPEED / projection.scale();
+      const sensitivity = (80 * settings.panSpeed) / projection.scale(); // 80 ~ land follows the finger
       rotation[0] += event.dx * sensitivity;
       rotation[1] = Math.max(-90, Math.min(90, rotation[1] - event.dy * sensitivity));
       projection.rotate(rotation);
@@ -2380,7 +2522,7 @@ window.__FIELD_ATLAS_PHYSICAL__={"mountains": [{"id": "mtn:Great Dividing Range"
       round.index++;
       if (round.index >= round.questions.length) endRound();
       else showQuestion();
-    }, inside ? 1300 : 2800);
+    }, (inside ? settings.rightDelay : settings.wrongDelay) * 1000);
   }
 
   // ---------- Neighbors ----------
@@ -2579,7 +2721,8 @@ window.__FIELD_ATLAS_PHYSICAL__={"mountains": [{"id": "mtn:Great Dividing Range"
       document.getElementById("hudStreak").textContent = round.streak;
       revealLabels = [{ id: q.id, text: q.display, lonlat: q.lonlat, target: true }];
       placeRevealLabels();
-      setTimeout(nextIdentify, 900);
+      const me = idq;
+      setTimeout(() => { if (idq === me) nextIdentify(); }, settings.rightDelay * 1000);
       return;
     }
     round.streak = 0;
@@ -2602,6 +2745,10 @@ window.__FIELD_ATLAS_PHYSICAL__={"mountains": [{"id": "mtn:Great Dividing Range"
     res.querySelector("span").textContent = pick ? pick.display : id;
     document.getElementById("idFoot").hidden = false;
     layoutIdentify();
+    if (!settings.idWaitNext) {
+      const me = idq;
+      setTimeout(() => { if (idq === me) nextIdentify(); }, settings.wrongDelay * 1000);
+    }
   }
 
   function nextIdentify() {
@@ -2669,7 +2816,7 @@ window.__FIELD_ATLAS_PHYSICAL__={"mountains": [{"id": "mtn:Great Dividing Range"
       if (q.lonlat) rotateTo(q.lonlat[0], q.lonlat[1], 700);
     }
 
-    const delay = correct ? 850 : 2100;
+    const delay = (correct ? settings.rightDelay : settings.wrongDelay) * 1000;
     setTimeout(() => {
       targetPath.classed("flash-good flash-target", false);
       targetHalo.classed("flash-good flash-target", false);
@@ -2842,6 +2989,82 @@ window.__FIELD_ATLAS_PHYSICAL__={"mountains": [{"id": "mtn:Great Dividing Range"
     round.questions = round.questions.slice(0, round.index + (answeredHere ? 1 : 0));
     endRound();
     round = null;
+  });
+
+  // ---------- Settings sheet ----------
+
+  function toHex(cssVar) {
+    // the colour actually in use, as #rrggbb, for a colour picker's starting value
+    const probe = document.createElement("span");
+    probe.style.color = `var(${cssVar})`;
+    document.body.appendChild(probe);
+    const rgb = getComputedStyle(probe).color.match(/[\d.]+/g) || [0, 0, 0];
+    probe.remove();
+    return "#" + rgb.slice(0, 3).map((x) => Math.round(+x).toString(16).padStart(2, "0")).join("");
+  }
+
+  function setZoomGain(g) {
+    const eff = projection.scale() / baseScale; // keep the current view where it is
+    settings.zoomGain = g;
+    zoomBehavior.scaleExtent([gestureK(0.6), gestureK(MAX_ZOOM_K)]);
+    svg.call(zoomBehavior.transform, d3.zoomIdentity.scale(gestureK(eff)));
+  }
+
+  function fillSettings() {
+    const v = (id, x) => { document.getElementById(id).value = x; };
+    v("setZoom", settings.zoomGain);
+    v("setPan", settings.panSpeed);
+    v("setRight", settings.rightDelay);
+    v("setWrong", settings.wrongDelay);
+    document.getElementById("setWaitNext").checked = settings.idWaitNext;
+    v("setLand", settings.land || toHex("--land"));
+    v("setWater", settings.water || toHex("--water"));
+    v("setAccent", settings.accent || toHex("--accent"));
+    showSettingValues();
+  }
+  function showSettingValues() {
+    const t = (id, x) => { document.getElementById(id).textContent = x; };
+    t("setZoomVal", settings.zoomGain.toFixed(1) + "×");
+    t("setPanVal", settings.panSpeed.toFixed(1) + "×");
+    t("setRightVal", settings.rightDelay.toFixed(1) + " s");
+    t("setWrongVal", settings.wrongDelay.toFixed(1) + " s");
+  }
+
+  const PRESET_ROW = document.getElementById("setPresets");
+  COLOUR_PRESETS.forEach((pr) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    const dots = pr.land ? [pr.land, pr.water, pr.accent].map((c) => `<i style="background:${c}"></i>`).join("") : "";
+    b.innerHTML = dots + pr.name;
+    b.addEventListener("click", () => {
+      settings.land = pr.land; settings.water = pr.water; settings.accent = pr.accent;
+      applyColours(); saveSettings(); fillSettings();
+    });
+    PRESET_ROW.appendChild(b);
+  });
+
+  const onInput = (id, fn) => document.getElementById(id).addEventListener("input", (e) => { fn(e.target); showSettingValues(); saveSettings(); });
+  onInput("setZoom", (el) => setZoomGain(+el.value));
+  onInput("setPan", (el) => { settings.panSpeed = +el.value; });
+  onInput("setRight", (el) => { settings.rightDelay = +el.value; });
+  onInput("setWrong", (el) => { settings.wrongDelay = +el.value; });
+  onInput("setLand", (el) => { settings.land = el.value; applyColours(); });
+  onInput("setWater", (el) => { settings.water = el.value; applyColours(); });
+  onInput("setAccent", (el) => { settings.accent = el.value; applyColours(); });
+  document.getElementById("setWaitNext").addEventListener("change", (e) => { settings.idWaitNext = e.target.checked; saveSettings(); });
+
+  document.getElementById("settingsBtn").addEventListener("click", () => {
+    fillSettings();
+    document.getElementById("settingsOverlay").hidden = false;
+  });
+  document.getElementById("settingsDone").addEventListener("click", () => {
+    document.getElementById("settingsOverlay").hidden = true;
+  });
+  document.getElementById("settingsReset").addEventListener("click", () => {
+    const g = SETTINGS_DEFAULTS.zoomGain;
+    settings = Object.assign({}, SETTINGS_DEFAULTS);
+    setZoomGain(g);
+    applyColours(); saveSettings(); fillSettings();
   });
 
   document.getElementById("resetStatsBtn").addEventListener("click", () => {

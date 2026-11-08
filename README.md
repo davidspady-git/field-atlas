@@ -38,3 +38,8 @@ turn up about 3x as often and earlier in the round; an old miss fades over ~2
 months. The start screen shows the chosen mode's rounds, average score, last
 five rounds and toughest countries.
 
+Settings (start screen > Settings; kept per device): zoom speed, pan speed,
+time before moving on after a right / wrong answer, Name It waiting for Next
+after a wrong answer, and colours (land, water, highlight; presets Theme /
+High contrast / Parchment / Atlas / Night). Reset all puts the defaults back.
+
