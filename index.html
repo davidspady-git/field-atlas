@@ -844,7 +844,7 @@
             <p class="pstat-value" id="statAnswered">0</p>
           </div>
           <div>
-            <p class="pstat-label">Accuracy</p>
+            <p class="pstat-label">Avg score</p>
             <p class="pstat-value" id="statAccuracy">0%</p>
           </div>
         </div>
@@ -1033,7 +1033,7 @@ window.__FIELD_ATLAS_PHYSICAL__={"mountains": [{"id": "mtn:Great Dividing Range"
   // ---------- stats: local + cloud ----------
 
   function emptyStats() {
-    return { countries: {}, roundsPlayed: 0, totalAnswered: 0, totalCorrect: 0 };
+    return { countries: {}, roundsPlayed: 0, totalAnswered: 0, totalCorrect: 0, rounds: [] };
   }
 
   function loadLocalStats() {
@@ -1042,7 +1042,8 @@ window.__FIELD_ATLAS_PHYSICAL__={"mountains": [{"id": "mtn:Great Dividing Range"
       if (!raw) return emptyStats();
       const parsed = JSON.parse(raw);
       return { countries: parsed.countries || {}, roundsPlayed: parsed.roundsPlayed || 0,
-        totalAnswered: parsed.totalAnswered || 0, totalCorrect: parsed.totalCorrect || 0 };
+        totalAnswered: parsed.totalAnswered || 0, totalCorrect: parsed.totalCorrect || 0,
+        rounds: parsed.rounds || [] };
     } catch (e) { return emptyStats(); }
   }
 
@@ -1056,24 +1057,64 @@ window.__FIELD_ATLAS_PHYSICAL__={"mountains": [{"id": "mtn:Great Dividing Range"
     saveLocalStats(stats);
   }
 
-  function recordAnswer(key, correct) {
+  // Each answer is kept per country *per mode* (keys: plain = Countries,
+  // mtn:/lake:/pin:/nbr:/id: = the others) as right/wrong counts plus a score
+  // s (0..1) that leans on recent games: each new result counts 40%, so a
+  // country you've since learned drifts back down the list.
+  const SCORE_NEW_WEIGHT = 0.4;
+
+  function keyScore(v) {
+    if (!v) return null;
+    if (typeof v.s === "number") return v.s;
+    const n = (v.c || 0) + (v.w || 0);
+    return n ? ((v.c || 0) + 0.5) / (n + 1) : null; // records from before scores were kept
+  }
+
+  function recordAnswer(key, correct, score) {
     const c = stats.countries[key] || { c: 0, w: 0 };
     if (correct) c.c++; else c.w++;
+    const sc = typeof score === "number" ? score : (correct ? 1 : 0);
+    const prev = keyScore(stats.countries[key]);
+    c.s = prev === null ? sc : prev * (1 - SCORE_NEW_WEIGHT) + sc * SCORE_NEW_WEIGHT;
+    c.t = Date.now();
     stats.countries[key] = c;
     stats.totalAnswered++;
     if (correct) stats.totalCorrect++;
     persist();
   }
 
-  function finishRound() {
+  // One line per finished round: mode, date, points, out of.
+  function finishRound(mode, pts, max) {
     stats.roundsPlayed++;
+    if (max > 0) {
+      stats.rounds.push({ m: mode, d: Date.now(), p: pts, x: max });
+      if (stats.rounds.length > 500) stats.rounds = stats.rounds.slice(-500);
+    }
     persist();
   }
 
-  function difficultyScore(key) {
-    const c = stats.countries[key];
-    const base = c ? (( (c.w || 0) + 0.5) / ((c.w || 0) + (c.c || 0) + 1)) : 0.5;
-    return base + Math.random() * 0.001;
+  // How likely a country is to be asked: never seen = 1; done perfectly =
+  // 0.2 (still turns up now and then); done badly = up to 3.7. A miss from
+  // long ago fades a little toward "never seen" over ~2 months.
+  const WEIGHT_UNSEEN = 1, WEIGHT_MIN = 0.2, WEIGHT_RANGE = 3.5;
+  function pickWeight(key) {
+    const v = stats.countries[key];
+    const s = keyScore(v);
+    if (s === null) return WEIGHT_UNSEEN;
+    let w = WEIGHT_MIN + WEIGHT_RANGE * Math.pow(1 - s, 1.3);
+    const ageDays = v.t ? (Date.now() - v.t) / 86400000 : 30;
+    const fade = Math.min(1, ageDays / 60);
+    return w * (1 - fade) + WEIGHT_UNSEEN * fade * 0.5 + w * fade * 0.5;
+  }
+
+  // Weighted draw without replacement (each item gets a random key u^(1/w),
+  // highest keys win): a weak country is much more likely to be picked, and
+  // to come early in the round, but nothing is ever certain or impossible.
+  function weightedOrder(items, weightOf) {
+    return items
+      .map((it) => ({ it, k: Math.pow(Math.random(), 1 / Math.max(weightOf(it), 1e-6)) }))
+      .sort((a, b) => b.k - a.k)
+      .map((x) => x.it);
   }
 
   function shuffle(arr) {
@@ -2054,6 +2095,7 @@ window.__FIELD_ATLAS_PHYSICAL__={"mountains": [{"id": "mtn:Great Dividing Range"
     document.getElementById("app").dataset.mode = currentMode;
     buildPoolChips();
     refreshStartButton();
+    refreshHistoryPanel();
     redraw();
   }
 
@@ -2116,7 +2158,7 @@ window.__FIELD_ATLAS_PHYSICAL__={"mountains": [{"id": "mtn:Great Dividing Range"
       chip.type = "button";
       chip.innerHTML = actual >= total
         ? `All <span class="chip-sub">(${total})</span>`
-        : `${actual} <span class="chip-sub">hardest for you</span>`;
+        : `${actual} <span class="chip-sub">favoring weak spots</span>`;
       chip.addEventListener("click", () => selectPool(actual, chip));
       row.appendChild(chip);
       if (actual === Math.min(50, total)) defaultChip = chip;
@@ -2179,28 +2221,39 @@ window.__FIELD_ATLAS_PHYSICAL__={"mountains": [{"id": "mtn:Great Dividing Range"
 
   // ---------- history panel ----------
 
+  function modeOfKey(k) {
+    const m = /^(mtn|lake|pin|nbr|id):/.exec(k);
+    if (!m) return "countries";
+    return { mtn: "mountains", lake: "lakes", pin: "pinpoint", nbr: "neighbors", id: "identify" }[m[1]];
+  }
+
+  // The start screen's record is for the mode picked: rounds, answers,
+  // average score, the last few rounds, and what's giving you most trouble.
   function refreshHistoryPanel() {
     const panel = document.getElementById("historyPanel");
-    if (stats.totalAnswered === 0) { panel.hidden = true; return; }
+    const entries = Object.entries(stats.countries).filter(([k]) => modeOfKey(k) === currentMode);
+    const rounds = stats.rounds.filter((r) => r.m === currentMode);
+    const answered = entries.reduce((a, [, v]) => a + (v.c || 0) + (v.w || 0), 0);
+    if (!answered) { panel.hidden = true; return; }
     panel.hidden = false;
-    document.getElementById("statRounds").textContent = stats.roundsPlayed;
-    document.getElementById("statAnswered").textContent = stats.totalAnswered;
-    const acc = stats.totalAnswered ? Math.round((stats.totalCorrect / stats.totalAnswered) * 100) : 0;
-    document.getElementById("statAccuracy").textContent = acc + "%";
+    document.querySelector("#historyPanel .field-label").textContent = `Your record · ${MODE_LABELS[currentMode]}`;
+    document.getElementById("statRounds").textContent = rounds.length;
+    document.getElementById("statAnswered").textContent = answered;
+    const pct = (r) => Math.round((100 * r.p) / r.x);
+    const avg = rounds.length ? Math.round(rounds.reduce((a, r) => a + pct(r), 0) / rounds.length)
+      : Math.round(100 * entries.reduce((a, [, v]) => a + (v.c || 0), 0) / answered);
+    document.getElementById("statAccuracy").textContent = avg + "%";
 
-    const entries = Object.entries(stats.countries).filter(([, v]) => (v.w || 0) + (v.c || 0) >= 2);
     const hardestLine = document.getElementById("hardestLine");
-    if (entries.length) {
-      entries.sort((a, b) => {
-        const ra = a[1].w / (a[1].w + a[1].c), rb = b[1].w / (b[1].w + b[1].c);
-        return rb - ra;
-      });
-      const worst = entries.slice(0, 3).map(([k]) => displayNameFor(k));
-      hardestLine.innerHTML = `Currently toughest: <b>${worst.join(", ")}</b>`;
-      hardestLine.hidden = false;
-    } else {
-      hardestLine.hidden = true;
-    }
+    const bits = [];
+    if (rounds.length) bits.push(`Last rounds: <b>${rounds.slice(-5).map((r) => pct(r) + "%").join(" · ")}</b>`);
+    const weak = entries.filter(([, v]) => keyScore(v) !== null && keyScore(v) < 0.75)
+      .sort((a, b) => keyScore(a[1]) - keyScore(b[1]))
+      .slice(0, 4)
+      .map(([k]) => displayNameFor(k).replace(/ \((pin|neighbors|name it)\)$/, ""));
+    if (weak.length) bits.push(`Toughest now: <b>${weak.join(", ")}</b> — these come up more often`);
+    hardestLine.innerHTML = bits.join("<br>");
+    hardestLine.hidden = !bits.length;
   }
 
   // ---------- round state ----------
@@ -2209,8 +2262,8 @@ window.__FIELD_ATLAS_PHYSICAL__={"mountains": [{"id": "mtn:Great Dividing Range"
   let answering = false;
 
   function startRound(n) {
-    const pool = getActivePool().sort((a, b) => difficultyScore(statKey(b.id)) - difficultyScore(statKey(a.id))).slice(0, n);
-    round = { mode: currentMode, questions: shuffle(pool), index: 0, streak: 0, misses: [], results: [] };
+    const questions = weightedOrder(getActivePool(), (f) => pickWeight(statKey(f.id))).slice(0, n);
+    round = { mode: currentMode, questions, index: 0, streak: 0, misses: [], results: [] };
     document.getElementById("app").classList.add("in-round");
     clearPin();
     document.getElementById("startOverlay").hidden = true;
@@ -2291,7 +2344,7 @@ window.__FIELD_ATLAS_PHYSICAL__={"mountains": [{"id": "mtn:Great Dividing Range"
 
     answering = true;
     document.getElementById("app").classList.add("answering");
-    recordAnswer(statKey(q.id), pts >= PIN_GOOD_POINTS);
+    recordAnswer(statKey(q.id), pts >= PIN_GOOD_POINTS, pts / 100);
     round.results.push({ id: q.id, points: pts, miles: near.miles });
     round.streak = pts >= PIN_GOOD_POINTS ? round.streak + 1 : 0;
     document.getElementById("hudStreak").textContent = round.streak;
@@ -2369,7 +2422,7 @@ window.__FIELD_ATLAS_PHYSICAL__={"mountains": [{"id": "mtn:Great Dividing Range"
       else if (isN) { missed.push(id); b.classList.add("missed"); tag("missed — borders"); }
     });
     const pts = Math.round((100 * hits) / (truth.size + wrong.length));
-    recordAnswer(statKey(q.id), pts === 100);
+    recordAnswer(statKey(q.id), pts === 100, pts / 100);
     round.results.push({ id: q.id, points: pts, hits, total: truth.size, missed, wrong });
     round.streak = pts === 100 ? round.streak + 1 : 0;
     document.getElementById("hudStreak").textContent = round.streak;
@@ -2674,7 +2727,12 @@ window.__FIELD_ATLAS_PHYSICAL__={"mountains": [{"id": "mtn:Great Dividing Range"
   }
 
   function endRound() {
-    finishRound();
+    if (SCORED_MODES.has(round.mode)) {
+      finishRound(round.mode, round.results.reduce((a, r) => a + r.points, 0), round.results.length * 100);
+    } else {
+      const total = round.questions.length;
+      finishRound(round.mode, total - round.misses.length, total);
+    }
     document.getElementById("app").classList.remove("in-round");
     document.getElementById("nbrPanel").hidden = true;
     clearPin();

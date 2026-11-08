@@ -30,3 +30,11 @@ Speed: shapes off screen aren't drawn, outlines are thinned to the screen's
 pixels (coarser while moving, sharp ~0.14 s after it stops), redraws are one
 per frame, and the map fills the whole screen shape (a phone too).
 
+Your record (kept in this browser): every answer, per country per mode, as
+right/wrong plus a 0-100% score that leans on recent games (Pinpoint and
+Neighbors keep their points). Each round picks countries at random but
+weighted: never-seen 1, badly-done up to ~3.7, well-done 0.2, so weak ones
+turn up about 3x as often and earlier in the round; an old miss fades over ~2
+months. The start screen shows the chosen mode's rounds, average score, last
+five rounds and toughest countries.
+
