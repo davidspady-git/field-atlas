@@ -1695,15 +1695,20 @@ window.__FIELD_ATLAS_PHYSICAL__={"mountains": [{"id": "mtn:Great Dividing Range"
     svg.transition().duration(duration).call(zoomBehavior.transform, d3.zoomIdentity);
   }
 
+  // Zoom gain: the globe's zoom = (gesture's zoom)^ZOOM_GAIN, so a pinch,
+  // scroll or +/- tap covers 1.5x as much ground (in log terms) as it would 1:1.
+  const ZOOM_GAIN = 1.5;
+  const gestureK = (k) => Math.pow(k, 1 / ZOOM_GAIN); // globe zoom -> d3 zoom transform
+
   const zoomBehavior = d3.zoom()
-    .scaleExtent([0.6, MAX_ZOOM_K])
+    .scaleExtent([gestureK(0.6), gestureK(MAX_ZOOM_K)])
     .filter((event) => {
       if (event.type === "wheel") return true;
       if (event.type.indexOf("touch") === 0) return !!(event.touches && event.touches.length > 1);
       return false;
     })
     .on("zoom", (event) => {
-      projection.scale(baseScale * event.transform.k);
+      projection.scale(baseScale * Math.pow(event.transform.k, ZOOM_GAIN));
       scheduleRedraw();
     });
 
@@ -1728,8 +1733,8 @@ window.__FIELD_ATLAS_PHYSICAL__={"mountains": [{"id": "mtn:Great Dividing Range"
   svg.call(zoomBehavior).on("dblclick.zoom", null);
   svg.call(rotateDrag);
 
-  document.getElementById("zoomIn").addEventListener("click", () => svg.transition().duration(200).call(zoomBehavior.scaleBy, 1.6));
-  document.getElementById("zoomOut").addEventListener("click", () => svg.transition().duration(200).call(zoomBehavior.scaleBy, 0.625));
+  document.getElementById("zoomIn").addEventListener("click", () => svg.transition().duration(150).call(zoomBehavior.scaleBy, 1.6));
+  document.getElementById("zoomOut").addEventListener("click", () => svg.transition().duration(150).call(zoomBehavior.scaleBy, 0.625));
   document.getElementById("zoomReset").addEventListener("click", () => resetView(500));
 
   document.getElementById("labelsToggle").addEventListener("click", (e) => {
@@ -2461,7 +2466,7 @@ window.__FIELD_ATLAS_PHYSICAL__={"mountains": [{"id": "mtn:Great Dividing Range"
     document.getElementById("nbrViewBtn").hidden = false;
     document.getElementById("nbrViewBtn").textContent = "Show list";
     rotateTo(q.lonlat[0], q.lonlat[1], 0);
-    svg.call(zoomBehavior.transform, d3.zoomIdentity.scale(k));
+    svg.call(zoomBehavior.transform, d3.zoomIdentity.scale(gestureK(k)));
     redraw();
   }
 
@@ -2504,7 +2509,7 @@ window.__FIELD_ATLAS_PHYSICAL__={"mountains": [{"id": "mtn:Great Dividing Range"
     const r = Math.min(Math.max(radius, 0.004), Math.PI / 2);
     const k = Math.max(1, Math.min(MAX_ZOOM_K, (0.42 * HEIGHT) / (Math.sin(r) * baseScale)));
     rotateTo(center[0], center[1], duration);
-    svg.transition().duration(duration).call(zoomBehavior.transform, d3.zoomIdentity.scale(k));
+    svg.transition().duration(duration).call(zoomBehavior.transform, d3.zoomIdentity.scale(gestureK(k)));
   }
 
   function extentOf(f) {
@@ -2550,7 +2555,7 @@ window.__FIELD_ATLAS_PHYSICAL__={"mountains": [{"id": "mtn:Great Dividing Range"
     });
     document.getElementById("idFoot").hidden = true;
     layoutIdentify();
-    fitView(q.lonlat, Math.max(extentOf(q) * 1.8, ID_MIN_VIEW), 600);
+    fitView(q.lonlat, Math.max(extentOf(q) * 1.8, ID_MIN_VIEW), 450);
   }
 
   function answerIdentify(id) {
@@ -2584,7 +2589,7 @@ window.__FIELD_ATLAS_PHYSICAL__={"mountains": [{"id": "mtn:Great Dividing Range"
       revealLabels.push({ id: pick.id, text: pick.display, lonlat: pick.lonlat });
       const gap = d3.geoDistance(q.lonlat, pick.lonlat);
       const mid = d3.geoInterpolate(q.lonlat, pick.lonlat)(0.5);
-      fitView(mid, Math.max(gap / 2 + Math.max(extentOf(q), extentOf(pick)), ID_MIN_VIEW), 700);
+      fitView(mid, Math.max(gap / 2 + Math.max(extentOf(q), extentOf(pick)), ID_MIN_VIEW), 500);
     }
     placeRevealLabels();
     const res = document.getElementById("idResult");
