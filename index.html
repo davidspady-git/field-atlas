@@ -16,12 +16,12 @@
     --paper: #EBF0E8;
     --panel: #FCFEFB;
     --panel-border: #C7D3C1;
-    --land: #B9CBAC;
-    --land-hover: #A2BA92;
-    --land-stroke: #8CA37E;
-    --water: #A7C6C6;
-    --lake: #6FA3B0;
-    --lake-stroke: #4C7E8A;
+    --land: #DCE3C4;
+    --land-hover: #C9D5AA;
+    --land-stroke: #9EAE82;
+    --water: #6E9FBA;
+    --lake: #4F87A6;
+    --lake-stroke: #356A87;
     --mountain: #AD8759;
     --mountain-hover: #C29A6E;
     --mountain-stroke: #7E5E38;
@@ -45,10 +45,10 @@
       --paper: #0F1B14;
       --panel: #16241C;
       --panel-border: #2C3E31;
-      --land: #3D5340;
-      --land-hover: #4C6650;
-      --land-stroke: #263323;
-      --water: #16333A;
+      --land: #5B7553;
+      --land-hover: #6A8762;
+      --land-stroke: #34452F;
+      --water: #0C2431;
       --lake: #3E8296;
       --lake-stroke: #245A69;
       --mountain: #C9A876;
@@ -74,10 +74,10 @@
     --paper: #0F1B14;
     --panel: #16241C;
     --panel-border: #2C3E31;
-    --land: #3D5340;
-    --land-hover: #4C6650;
-    --land-stroke: #263323;
-    --water: #16333A;
+    --land: #5B7553;
+    --land-hover: #6A8762;
+    --land-stroke: #34452F;
+    --water: #0C2431;
     --lake: #3E8296;
     --lake-stroke: #245A69;
     --mountain: #C9A876;
@@ -148,7 +148,7 @@
   #mapWrap, #topbar, #toast, #zoomControls { -webkit-user-select: none; user-select: none; }
 
   .sphere { fill: url(#globeShade); }
-  .shade-hi { stop-color: color-mix(in srgb, var(--water) 45%, white); }
+  .shade-hi { stop-color: color-mix(in srgb, var(--water) 78%, white); }
   .shade-lo { stop-color: var(--water); }
   .graticule { fill: none; stroke: var(--graticule); stroke-width: 0.5; }
 
@@ -584,6 +584,7 @@
   #app[data-mode="identify"] .country.kind-context {
     fill: var(--land);
     stroke: var(--land);
+    stroke-width: 1.6; /* wide enough to close the hairline seams between neighbours */
   }
   #app[data-mode="pinpoint"] #labelsToggle,
   #app[data-mode="identify"] #labelsToggle { display: none; }
