@@ -141,6 +141,9 @@
     cursor: grab;
   }
   #mapSvg:active { cursor: grabbing; }
+  /* Double-clicking is how you answer, so nothing on the game screen should
+     ever get text-selected (a selection can hijack the next drag). */
+  #mapWrap, #topbar, #toast, #zoomControls { -webkit-user-select: none; user-select: none; }
 
   .sphere { fill: url(#globeShade); }
   .shade-hi { stop-color: color-mix(in srgb, var(--water) 45%, white); }
@@ -1406,6 +1409,14 @@ window.__FIELD_ATLAS_PHYSICAL__={"mountains": [{"id": "mtn:Great Dividing Range"
   const rotateDrag = d3.drag()
     .filter((event) => event.type !== "touchstart" || event.touches.length === 1)
     .on("drag", (event) => {
+      // A mouse move with no button held means the release was missed (the
+      // browser took it for a text/native drag): end the drag instead of
+      // letting the globe follow the cursor.
+      const src = event.sourceEvent;
+      if (src && src.type === "mousemove" && src.buttons === 0) {
+        window.dispatchEvent(new MouseEvent("mouseup", { view: window, clientX: src.clientX, clientY: src.clientY }));
+        return;
+      }
       const sensitivity = 80 / projection.scale();
       rotation[0] += event.dx * sensitivity;
       rotation[1] = Math.max(-90, Math.min(90, rotation[1] - event.dy * sensitivity));
