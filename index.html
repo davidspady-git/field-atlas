@@ -654,12 +654,61 @@
   }
   #nbrBtn:hover { background: var(--accent-strong); }
 
+  /* After Check: the map comes back with the answer on it. "Show list"
+     (nbr-list) flips back to the marked list. */
+  #app.in-round.nbr-reveal:not(.nbr-list)[data-mode="neighbors"] #mapWrap { display: block; }
+  #app.in-round.nbr-reveal:not(.nbr-list)[data-mode="neighbors"] #zoomControls { display: flex; }
+  #app.nbr-reveal:not(.nbr-list) #nbrPanel {
+    inset: auto 0 0 0;
+    padding: 0 16px 16px;
+    overflow: visible;
+    justify-content: flex-start;
+    pointer-events: none;
+  }
+  #app.nbr-reveal:not(.nbr-list) .nbr-card { pointer-events: auto; max-width: 560px; }
+  #app.nbr-reveal:not(.nbr-list) #nbrHelp,
+  #app.nbr-reveal:not(.nbr-list) #nbrGrid { display: none; }
+  #nbrLegend { display: none; flex-wrap: wrap; gap: 6px 14px; font-size: 12.5px; color: var(--ink-soft); margin: 0 0 12px; }
+  #app.nbr-reveal:not(.nbr-list) #nbrLegend { display: flex; }
+  #nbrLegend span { display: inline-flex; align-items: center; gap: 6px; }
+  #nbrLegend i { width: 14px; height: 10px; border-radius: 3px; display: inline-block; }
+  #nbrViewBtn {
+    background: transparent;
+    border: 1px solid var(--panel-border);
+    color: var(--ink-soft);
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-size: 14px;
+  }
+  #nbrViewBtn:hover { color: var(--ink); border-color: var(--ink-soft); }
+  #nbrViewBtn[hidden] { display: none; }
+
+  .country.nb-hit { fill: var(--good); stroke: var(--good-ink); }
+  .country.nb-missed { fill: color-mix(in srgb, var(--good) 40%, var(--land)); stroke: var(--good-ink); stroke-width: 1.4; stroke-dasharray: 3 2; }
+  .country.nb-wrong { fill: var(--bad); stroke: var(--bad-ink); }
+  .country.nb-target { fill: var(--accent); stroke: var(--accent-strong); }
+  .reveal-label {
+    font-family: "Public Sans", system-ui, sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    fill: var(--ink);
+    stroke: var(--panel);
+    stroke-width: 3px;
+    stroke-linejoin: round;
+    paint-order: stroke;
+    text-anchor: middle;
+    dominant-baseline: middle;
+    pointer-events: none;
+  }
+  .reveal-label.target { font-size: 15px; font-weight: 800; }
+
   #scoreSub { text-align: center; color: var(--ink-soft); font-size: 14px; margin: -8px 0 18px; }
   #scoreSub[hidden] { display: none; }
   .missed-list .miss-detail { text-align: right; }
 
   @media (max-width: 560px) {
     #nbrPanel { padding-top: 215px; }
+    #app.nbr-reveal:not(.nbr-list) #nbrPanel { padding-right: 80px; }
     .nbr-grid { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); }
     #topbar { flex-direction: column; }
     #promptCard { max-width: 100%; }
@@ -703,8 +752,15 @@
     <div class="nbr-card">
       <p class="nbr-help" id="nbrHelp"></p>
       <div class="nbr-grid" id="nbrGrid"></div>
+      <div id="nbrLegend">
+        <span><i style="background:var(--accent)"></i>the country</span>
+        <span><i style="background:var(--good)"></i>borders, you got it</span>
+        <span><i style="background:color-mix(in srgb, var(--good) 40%, var(--land)); outline:1.5px dashed var(--good-ink); outline-offset:-1.5px"></i>borders, missed</span>
+        <span><i style="background:var(--bad)"></i>your wrong pick</span>
+      </div>
       <div class="nbr-actions">
         <p id="nbrResult"></p>
+        <button id="nbrViewBtn" type="button" hidden>Show list</button>
         <button id="nbrBtn" type="button">Check</button>
       </div>
     </div>
@@ -1089,6 +1145,7 @@ window.__FIELD_ATLAS_PHYSICAL__={"mountains": [{"id": "mtn:Great Dividing Range"
   const haloLayer = svg.append("g").attr("id", "haloLayer");
   const pinLayer = svg.append("g").attr("id", "pinLayer");
   const pinPath = d3.geoPath(projection);
+  const revealLabelLayer = svg.append("g").attr("id", "revealLabelLayer");
   const labelLayer = svg.append("g").attr("id", "labelLayer");
 
   projection.fitSize([WIDTH, HEIGHT], { type: "Sphere" });
@@ -1119,6 +1176,18 @@ window.__FIELD_ATLAS_PHYSICAL__={"mountains": [{"id": "mtn:Great Dividing Range"
     updateHalos();
     updateLabels();
     pinLayer.selectAll("path").attr("d", (d) => pinPath.pointRadius(d.r || 4)(d.geo));
+    placeRevealLabels();
+  }
+
+  // Names on the Neighbors reveal map: the country and everything coloured.
+  let revealLabels = [];
+  function placeRevealLabels() {
+    const shown = revealLabels.filter((d) => isFrontFacing(d.lonlat[0], d.lonlat[1], rotation));
+    revealLabelLayer.selectAll("text").data(shown, (d) => d.id).join("text")
+      .attr("class", (d) => "reveal-label" + (d.target ? " target" : ""))
+      .attr("x", (d) => projection(d.lonlat)[0])
+      .attr("y", (d) => projection(d.lonlat)[1])
+      .text((d) => d.text);
   }
 
   function updateLabels() {
@@ -2079,6 +2148,7 @@ window.__FIELD_ATLAS_PHYSICAL__={"mountains": [{"id": "mtn:Great Dividing Range"
     });
     document.getElementById("nbrResult").textContent = "";
     document.getElementById("nbrBtn").textContent = "Check";
+    document.getElementById("nbrViewBtn").hidden = true;
     document.getElementById("nbrPanel").scrollTop = 0;
   }
 
@@ -2108,9 +2178,54 @@ window.__FIELD_ATLAS_PHYSICAL__={"mountains": [{"id": "mtn:Great Dividing Range"
       (wrong.length ? ` · ${wrong.length} wrong` : "");
     document.getElementById("nbrBtn").textContent =
       round.index + 1 >= round.questions.length ? "Finish" : "Next";
+    showNeighborMap(q, truth, picked);
   }
 
+  const featureById = (id) => FEATURES.find((f) => f.id === id);
+
+  function showNeighborMap(q, truth, picked) {
+    const app = document.getElementById("app");
+    const cls = new Map([[q.id, "nb-target"]]);
+    truth.forEach((id) => cls.set(id, picked.has(id) ? "nb-hit" : "nb-missed"));
+    picked.forEach((id) => { if (!truth.has(id)) cls.set(id, "nb-wrong"); });
+    g.selectAll("path.kind-country").each(function (d) {
+      const c = cls.get(d.id);
+      this.classList.remove("nb-target", "nb-hit", "nb-missed", "nb-wrong");
+      if (c) this.classList.add(c);
+    });
+    revealLabels = [...cls.keys()].map((id) => featureById(id)).filter((f) => f && f.lonlat)
+      .map((f) => ({ id: f.id, text: f.display, lonlat: f.lonlat, target: f.id === q.id }));
+
+    // Turn to the country and zoom so everything coloured fits on screen.
+    let far = 0;
+    revealLabels.forEach((d) => { far = Math.max(far, d3.geoDistance(q.lonlat, d.lonlat)); });
+    borderSample(q).forEach((v) => { far = Math.max(far, d3.geoDistance(q.lonlat, toLonLat(v))); });
+    far = Math.min(far * 1.25 + 0.03, Math.PI / 2);
+    const k = Math.max(1, Math.min(MAX_ZOOM_K, (0.4 * HEIGHT) / (Math.sin(far) * baseScale)));
+    app.classList.add("nbr-reveal");
+    app.classList.remove("nbr-list");
+    document.getElementById("nbrViewBtn").hidden = false;
+    document.getElementById("nbrViewBtn").textContent = "Show list";
+    rotateTo(q.lonlat[0], q.lonlat[1], 0);
+    svg.call(zoomBehavior.transform, d3.zoomIdentity.scale(k));
+    redraw();
+  }
+
+  function clearNeighborMap() {
+    const app = document.getElementById("app");
+    app.classList.remove("nbr-reveal", "nbr-list");
+    g.selectAll("path.kind-country").classed("nb-target nb-hit nb-missed nb-wrong", false);
+    revealLabels = [];
+    revealLabelLayer.selectAll("text").remove();
+  }
+
+  document.getElementById("nbrViewBtn").addEventListener("click", (e) => {
+    const listing = document.getElementById("app").classList.toggle("nbr-list");
+    e.currentTarget.textContent = listing ? "Show map" : "Show list";
+  });
+
   function nextNeighbor() {
+    clearNeighborMap();
     round.index++;
     if (round.index >= round.questions.length) endRound();
     else showQuestion();
@@ -2231,6 +2346,7 @@ window.__FIELD_ATLAS_PHYSICAL__={"mountains": [{"id": "mtn:Great Dividing Range"
     document.getElementById("app").classList.remove("in-round");
     document.getElementById("nbrPanel").hidden = true;
     clearPin();
+    clearNeighborMap();
     nbr = null;
     document.getElementById("topbar").hidden = true;
     if (SCORED_MODES.has(round.mode)) {

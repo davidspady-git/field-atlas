@@ -12,7 +12,9 @@ Two more modes:
   1,000 miles; the reveal draws the line from your pin to the nearest edge.
 - **Neighbors** -- no map. The named country's real neighbours plus the
   nearest other countries, 20 names in all; tap every one that shares a land
-  border, then Check. Score = right picks / (real borders + wrong picks).
+  border, then Check -- the map comes back, turned and zoomed to the country, with
+  your hits, misses and wrong picks coloured and named (Show list flips back).
+  Score = right picks / (real borders + wrong picks).
   Borders come from the shared edges in the map data, plus Botswana-Zambia
   and Spain-Morocco (Ceuta, Melilla), too short for its resolution.
 
