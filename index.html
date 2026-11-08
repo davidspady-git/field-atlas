@@ -1712,6 +1712,10 @@ window.__FIELD_ATLAS_PHYSICAL__={"mountains": [{"id": "mtn:Great Dividing Range"
       scheduleRedraw();
     });
 
+  // How far the globe turns per unit dragged (80 = the land follows your
+  // finger roughly; higher turns it further for the same swipe).
+  const DRAG_SPEED = 120;
+
   const rotateDrag = d3.drag()
     .filter((event) => event.type !== "touchstart" || event.touches.length === 1)
     .on("drag", (event) => {
@@ -1723,7 +1727,7 @@ window.__FIELD_ATLAS_PHYSICAL__={"mountains": [{"id": "mtn:Great Dividing Range"
         window.dispatchEvent(new MouseEvent("mouseup", { view: window, clientX: src.clientX, clientY: src.clientY }));
         return;
       }
-      const sensitivity = 80 / projection.scale();
+      const sensitivity = DRAG_SPEED / projection.scale();
       rotation[0] += event.dx * sensitivity;
       rotation[1] = Math.max(-90, Math.min(90, rotation[1] - event.dy * sensitivity));
       projection.rotate(rotation);
